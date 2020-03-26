@@ -9,21 +9,24 @@ void https_post(String host, String api, const char *fingerprint, String http_pa
   WiFiClientSecure httpsClient;
   const int httpsPort = 443;
   
-  Serial.println(host);
+  Serial.print("Host: ");
+  Serial.print(host);
+  Serial.println(api);
 
   Serial.printf("Using fingerprint '%s'\n", fingerprint);
   httpsClient.setFingerprint(fingerprint);
   httpsClient.setTimeout(15000); // 15 Seconds
-  delay(1000);
+  // delay(1000);
   
   Serial.print("HTTPS Connecting...");
-  int r=0; //retry counter
-  while((!httpsClient.connect(host, httpsPort)) && (r < 30)){
+  int retry = 0; //retry counter
+  while((!httpsClient.connect(host, httpsPort)) && (retry < 30))
+  {
       delay(100);
       Serial.print(".");
-      r++;
+      retry++;
   }
-  if(r==30) {
+  if(retry == 30) {
     Serial.println("Connection failed");
     return;
   }
