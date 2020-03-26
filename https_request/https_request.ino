@@ -2,43 +2,16 @@
 #include <WiFiClientSecure.h> 
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPClient.h>
+#include <wireless_operations.h>
 
-/* Set these to your desired credentials. */
 const char *ssid = "sharma";  //ENTER YOUR WIFI SETTINGS
 const char *password = "H0m$#@12345";
-
-//const char fingerprint[] PROGMEM = "06 68 CF CF 1D 2C E8 30 5F DF 33 C9 33 C3 10 01 22 13 15 1E";
-//Link to read data from https://jsonplaceholder.typicode.com/comments?postId=7
-//Web/Server address to read/write from 
-//=======================================================================
-//                    Power on setup
-//=======================================================================
 
 void setup() 
 {
   delay(1000);
   Serial.begin(115200);
-  WiFi.mode(WIFI_OFF);        //Prevents reconnection issue (taking too long to connect)
-  delay(1000);
-  WiFi.mode(WIFI_STA);        //Only Station No AP, This line hides the viewing of ESP as wifi hotspot
-  
-  WiFi.begin(ssid, password);     //Connect to your WiFi router
-  Serial.println("");
-
-  Serial.print("Connecting");
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) 
-  {
-    delay(500);
-    Serial.print(".");
-  }
-
-  //If connection successful show IP address in serial monitor
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(ssid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());  //IP address assigned to your ESP
+  connect_AP(ssid, password);
 }
 
 
@@ -67,23 +40,9 @@ void https_post(String host, String api, const char *fingerprint, String http_pa
   else {
     Serial.println("Connected to web");
   }
-  
-//  String getData, Link;
-  
-//  //POST Data
-//  Link = "/post";
 
   Serial.print("requesting URL: ");
   Serial.println(host);
-  /*
-   POST /post HTTP/1.1
-   Host: postman-echo.com
-   Content-Type: application/x-www-form-urlencoded
-   Content-Length: 13
-  
-   say=Hi&to=Mom
-    
-   */
 
   httpsClient.print(String("POST ") + api + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
@@ -102,15 +61,15 @@ void https_post(String host, String api, const char *fingerprint, String http_pa
     }
   }
 
-  Serial.println("reply was:");
-  Serial.println("==========");
+  Serial.println("Server response:");
+  Serial.println(".............................................................");
   String line;
   while(httpsClient.available()){        
     line = httpsClient.readStringUntil('\n');  //Read Line by Line
     Serial.println(line); //Print response
   }
-  Serial.println("==========");
-  Serial.println("closing connection");
+  Serial.println(".............................................................");
+  Serial.println("Closing connection...");
     
 //  delay(2000);  //POST Data at every 2 seconds
 }
@@ -131,7 +90,7 @@ void send_slack_message(String from_username, String destination, String message
   https_post(host, api, slack_fingerprint, payload, http_headers);
 }
 
-void loop()
+void test()
 {
   String from_username = "Aaditya Sharma";
   String destination = "@aadityasharma";
