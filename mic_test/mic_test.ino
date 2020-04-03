@@ -61,7 +61,7 @@ void __send_slack_message(String message)
 void loop()
 { 
   pdb = db;
-  adc= analogRead(MIC);
+  adc = analogRead(MIC);
 //  db = (adc+83.2073) / 11.003; //Convert ADC value to dB using Regression values
 //  db = adc;
   db_sum += abs(adc - 512 - diff_constant);
