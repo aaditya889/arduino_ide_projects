@@ -3,5 +3,5 @@ from . import views
 
 
 urlpatterns = [
-    path('nodemcu', views.consume_nodemcu, name='consume_nodemcu'),
+    path('get_data', views.get_data, name='get_data'),
 ]
