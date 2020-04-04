@@ -6,7 +6,7 @@ from rest_framework.response import Response
 import mysql.connector as mysql
 from .poller import poller
 from .text_to_audio import convert_text_to_audio
-import pytz
+#import pytz
 from datetime import datetime, timezone, timedelta
 import threading
 import time
@@ -35,7 +35,7 @@ GET_AUDIO_WITH_TIME_RANGE = 'select * from audio where created_at >= "{}" and cr
 
 
 #----CONFIGS---------
-ALERT_WAIT_TIME_IN_MINS = 5
+ALERT_WAIT_TIME_IN_SECS = 15
 ALERT_THRESHOLD_AUDIO_VALUE = 10
 AUDIO_DATA_FETCH_TIME_RANGE_SECS = 30
 POLLER_WAIT_TIME_SECS = 2
@@ -47,32 +47,31 @@ SILENCE_HOUR_END_TEXT = "Silence hours are over."
 SILENCE_ALERT_TEXT = "You know what’s funny? Not you. please shut-up."
 
 ################# UTILS #########################################
-def convert_time_utc_to_mysql_format(datetime_object):
-    return str(datetime_object.astimezone(pytz.timezone('Asia/Kolkata'))).split('.')[0]
-    #return time.strftime("%Y-%m-%d %H:%M:%S")
+# def convert_time_utc_to_mysql_format(datetime_object):
+#     return str(datetime_object.astimezone(pytz.timezone('Asia/Kolkata'))).split('.')[0]
+#     #return time.strftime("%Y-%m-%d %H:%M:%S")
  
-def get_current_time():
-    return convert_time_utc_to_mysql_format(datetime.now())
+# def get_current_time():
+#     return convert_time_utc_to_mysql_format(datetime.now())
 
+def get_curr_time_in_ist():
+    curr_time = datetime.utcnow() + timedelta(minutes=330)
+    return curr_time
+
+def get_curr_time_in_ist_string():
+    curr_time = datetime.utcnow() + timedelta(minutes=330)
+    return curr_time.strftime("%Y-%m-%d %H:%M:%S")
 
 ################# DMLS #########################################
 def get_latest_audio_data(time_in_secs):
-    query = GET_LATEST_AUDIO_QUERY.format(get_current_time(), time_in_secs)
+    query = GET_LATEST_AUDIO_QUERY.format(get_curr_time_in_ist_string(), time_in_secs)
     print(query)
     cursor.execute(query)
     records = cursor.fetchall()
     return records
 
-def get_audio_data_for_time_range(start_datetime, end_datetime):
-    query = GET_AUDIO_WITH_TIME_RANGE.format(convert_time_utc_to_mysql_format(start_datetime), convert_time_utc_to_mysql_format(end_datetime))
-    print(query)
-    cursor.execute(query)
-    records = cursor.fetchall()
-    return records
-
-# start time to be in datetime object
-def get_audio_data(start_time):
-    query = GET_AUDIO_QUERY.format(convert_time_utc_to_mysql_format(start_time))
+def get_audio_data_for_time_range(start_time, end_time):
+    query = GET_AUDIO_WITH_TIME_RANGE.format(start_time, end_time)
     print(query)
     cursor.execute(query)
     records = cursor.fetchall()
@@ -91,10 +90,10 @@ def get_latest_data(request):
 # %Y-%m-%d %H:%M:%S => 2020-04-04 13:00:38
 @api_view(['POST'])
 def get_data_with_time_range(request):
-    start_datetime = datetime.strptime(request.data['start_time'], '%Y-%m-%d %H:%M:%S')
-    end_datetime = datetime.strptime(request.data['end_time'], '%Y-%m-%d %H:%M:%S')
+    # start_datetime = datetime.strptime(request.data['start_time'], '%Y-%m-%d %H:%M:%S')
+    # end_datetime = datetime.strptime(request.data['end_time'], '%Y-%m-%d %H:%M:%S')
     result = dict()
-    result['data'] = get_audio_data_for_time_range(start_datetime, end_datetime)
+    result['data'] = get_audio_data_for_time_range(request.data['start_time'], request.data['end_time'])
     return JsonResponse(result, status=status.HTTP_200_OK)
 
 
@@ -111,12 +110,14 @@ def set_data(request):
 @api_view(['POST'])
 def start_silence_hours(request):
     convert_text_to_audio(SILENCE_HOUR_START_TEXT, "test")
+    global IS_SILENCE_HOURS
     IS_SILENCE_HOURS = True
     return JsonResponse({}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def end_silence_hours(request):
     convert_text_to_audio(SILENCE_HOUR_END_TEXT, "test")
+    global IS_SILENCE_HOURS
     IS_SILENCE_HOURS = False
     return JsonResponse({}, status=status.HTTP_200_OK)
 
@@ -146,7 +147,8 @@ def alert_on_noise(last_alert_time, threshold_audio_value, time_range_in_secs):
     print("average value: ", avg)
 
     time_spent_since_last_alert = datetime.now() - last_alert_time
-    if IS_SILENCE_HOURS and avg > threshold_audio_value and time_spent_since_last_alert.seconds / 60 > ALERT_WAIT_TIME_IN_MINS:
+    print("IS_SILENCE_HOURS: ", IS_SILENCE_HOURS)
+    if IS_SILENCE_HOURS and avg > threshold_audio_value and time_spent_since_last_alert.seconds >= ALERT_WAIT_TIME_IN_SECS:
         print("SENDING ALERT")
         #send_slack_alert()
         send_voice_alert()
@@ -156,11 +158,9 @@ def alert_on_noise(last_alert_time, threshold_audio_value, time_range_in_secs):
     print("worker fetch count: ", len(response['data']))
     return response
 
-worker = threading.Thread(target=alert_on_noise, args=(datetime.now() - timedelta(minutes=ALERT_WAIT_TIME_IN_MINS), ALERT_THRESHOLD_AUDIO_VALUE, AUDIO_DATA_FETCH_TIME_RANGE_SECS))
+worker = threading.Thread(target=alert_on_noise, args=(datetime.now() - timedelta(seconds=0), ALERT_THRESHOLD_AUDIO_VALUE, AUDIO_DATA_FETCH_TIME_RANGE_SECS))
 worker.start()
-
 
 @api_view(['GET'])
 def test(request):
-
     return JsonResponse({"hello":"world"}, status=status.HTTP_200_OK)

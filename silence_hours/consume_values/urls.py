@@ -11,7 +11,7 @@ urlpatterns = [
 ]
 
 # curl localhost:8000/consume/get_latest_data -XPOST -H 'Content-Type: application/json' -d'{"time_in_secs":60}'
-# curl localhost:8000/consume/get_data_with_time_range -XPOST -H 'Content-Type: application/json' -d'{"start_time":"2020-04-04 01:22:28", "end_time" : "2020-04-04 13:42:28"}'
+# curl localhost:8000/consume/get_data_with_time_range -XPOST -H 'Content-Type: application/json' -d'{"start_time":"2020-04-04 13:26:11", "end_time" : "2020-04-04 14:26:11"}'
 # curl localhost:8000/consume/set_data -XPOST -H 'Content-Type: application/json' -d'{"pod_name":"platform", "value": 15}'
 # curl localhost:8000/consume/start_silence_hours -XPOST -H 'Content-Type: application/json' -d'{}'
 # curl localhost:8000/consume/end_silence_hours -XPOST -H 'Content-Type: application/json' -d'{}'
