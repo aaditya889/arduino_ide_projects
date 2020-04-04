@@ -44,7 +44,7 @@ IS_SILENCE_HOURS = False
 #----MESSAGES--------
 SILENCE_HOUR_START_TEXT = "silence hour begins. Get into your mind palace."
 SILENCE_HOUR_END_TEXT = "Silence hours are over."
-SILENCE_ALERT_TEXT = "You know what’s funny? Not you. please shut-up."
+SILENCE_ALERT_TEXT = "You know what’s funny? Not you. so please shut-up."
 
 ################# UTILS #########################################
 # def convert_time_utc_to_mysql_format(datetime_object):
@@ -121,6 +121,10 @@ def end_silence_hours(request):
     IS_SILENCE_HOURS = False
     return JsonResponse({}, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def test(request):
+    return JsonResponse({"hello":"world"}, status=status.HTTP_200_OK)
+
 ############## worker ###########################################
 
 def send_voice_alert():
@@ -160,7 +164,3 @@ def alert_on_noise(last_alert_time, threshold_audio_value, time_range_in_secs):
 
 worker = threading.Thread(target=alert_on_noise, args=(datetime.now() - timedelta(seconds=0), ALERT_THRESHOLD_AUDIO_VALUE, AUDIO_DATA_FETCH_TIME_RANGE_SECS))
 worker.start()
-
-@api_view(['GET'])
-def test(request):
-    return JsonResponse({"hello":"world"}, status=status.HTTP_200_OK)

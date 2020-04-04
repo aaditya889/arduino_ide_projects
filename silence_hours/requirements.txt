@@ -3,3 +3,4 @@ DJango
 django-rest-framework
 pytz
 gtts
+matplotlib
