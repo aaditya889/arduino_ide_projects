@@ -6,7 +6,7 @@ from rest_framework.response import Response
 import mysql.connector as mysql
 from .poller import poller
 import pytz
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import threading
 import time
 
@@ -30,6 +30,11 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS audio (
 INSERT_IN_AUDIO_QUERY = 'INSERT INTO audio (pod_name, value) VALUES ("{}", {})'
 GET_LATEST_AUDIO_QUERY = 'select * from audio where created_at >= DATE_SUB("{}", INTERVAL {} SECOND)'
 GET_AUDIO_QUERY = 'select * from audio where created_at >= {}'
+ALERT_WAIT_TIME_IN_MINS = 5
+ALERT_THRESHOLD_AUDIO_VALUE = 10
+AUDIO_DATA_FETCH_TIME_RANGE_SECS = 30
+POLLER_WAIT_TIME_SECS = 2
+
 
 ################# UTILS #########################################
 def convert_time_utc_to_mysql_format(datetime_object):
@@ -83,15 +88,31 @@ def construct_next_poll(response):
     next_poll['request'] = response['updated_request']
     return next_poll
 
-@poller(wait_time_secs=2, construct_next_poll=construct_next_poll)
+def get_avg_audio_value(data):
+    total_value = 0
+    for audio_data in data:
+        total_value = total_value + audio_data[2]
+    return total_value/(len(data) or 1)
+
+@poller(wait_time_secs=POLLER_WAIT_TIME_SECS, construct_next_poll=construct_next_poll)
 def alert_on_noise(last_alert_time, threshold_audio_value, time_range_in_secs):
     response = dict()
     response['data'] = get_latest_audio_data(time_range_in_secs)
+    avg = get_avg_audio_value(response['data'])
+    print("average value: ", avg)
+
+    time_spent_since_last_alert = datetime.now() - last_alert_time
+    if avg > threshold_audio_value and time_spent_since_last_alert.seconds / 60 > ALERT_WAIT_TIME_IN_MINS:
+        print("SENDING ALERT")
+        #send_slack_alert()
+        #send_voice_alert()
+        last_alert_time = datetime.now()
+
     response['updated_request'] = last_alert_time
     print("worker fetch count: ", len(response['data']))
     return response
 
-worker = threading.Thread(target=alert_on_noise, args=(None, None, 60))
+worker = threading.Thread(target=alert_on_noise, args=(datetime.now() - timedelta(minutes=ALERT_WAIT_TIME_IN_MINS), ALERT_THRESHOLD_AUDIO_VALUE, AUDIO_DATA_FETCH_TIME_RANGE_SECS))
 worker.start()
 
 
