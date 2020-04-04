@@ -2,3 +2,4 @@ mysql-connector-python==8.0.19
 DJango
 django-rest-framework
 pytz
+gtts
