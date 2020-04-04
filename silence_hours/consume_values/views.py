@@ -14,8 +14,8 @@ import time
 db = mysql.connect(
     host = "localhost",
     user = "root",
-    passwd = "asdfg12345",
-    #passwd = "aaditya",
+    # passwd = "asdfg12345",
+    passwd = "aaditya",
     database = "pod_assistant"
 )
 

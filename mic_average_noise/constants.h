@@ -4,5 +4,5 @@
 
 const char *ssid = "sharma";
 const char *password = "H0m$#@12345";
-const unsigned short diff_constant = 40;
-const short time_interval_secs = 10;
+const unsigned short diff_constant = 17;
+const short time_interval_secs = 1;

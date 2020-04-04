@@ -30,11 +30,13 @@ void loop()
 //    audio_data = (audio_data << 10) | adc;
 
 //    Serial.println("original:");
-    for(uint16_t i = 0; i < MAX_DATA_RETENTION; i+=2)
+    for(uint16_t i = 0; i < MAX_DATA_RETENTION; i++)
     {
       adc = analogRead(MIC);
-      audio_data[i+1] = adc & 0xff;
-      audio_data[i] = (adc >> 8) & 0xff;
+//      audio_data[i+1] = adc & 0xff;
+//      audio_data[i] = (adc >> 8) & 0xff;
+//      delayMicroseconds(5);
+      audio_data[i] = adc;
 //      Serial.print(adc);
 //      Serial.print(" ");
     }
@@ -51,9 +53,9 @@ void loop()
     delay(1);
 //    Serial.println(sizeof(audio_data));
     udp_client.write((char*)audio_data, sizeof(audio_data));
-    delay(1);
+//    delay(1);
     udp_client.endPacket();
-//    Serial.println(udp_client.endPacket());
+//    Serial.pr intln(udp_client.endPacket());
     delay(1);
 //    delay(600000);
 }
