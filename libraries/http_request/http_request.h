@@ -1,18 +1,35 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
+#include <WiFiClient.h>
 
-
-void http_get(const char* url) 
+void http_get(const char* host, uint16_t http_port) 
 {
-  if (WiFi.status() != WL_CONNECTED) 
-  {
-    Serial.println("Network failure! Returning...");
+//  if (WiFi.status() != WL_CONNECTED) 
+//  {
+//    Serial.println("Network failure! Returning...");
+//    return;
+//  }
+  Serial.print("HOST: ");
+  Serial.println(host);
+
+  HTTPClient http; //Object of class HTTPClient
+  WiFiClient client;
+  const int httpPort = 80;
+  if (!client.connect(host, httpPort)) {
+    Serial.println("connection failed YO!!!!!");
     return;
   }
-     
-  HTTPClient http; //Object of class HTTPClient
+  else{
+    Serial.println("YOYOYOYOYO");
+  }
+
+  String url = "http://" + (String)host;
+  Serial.print("URL: ");
+  Serial.println(url);
+
   http.begin(url);
+  
   int httpCode = http.GET();
 
   if (httpCode > 0) 
@@ -23,16 +40,59 @@ void http_get(const char* url)
   else
   {
     Serial.println("GET request failed!");  
+    Serial.println(httpCode);
   }
   http.end();
 }
 
 
-void http_post(const char *url, const char *http_payload, const char *http_headers)
+void http_ip_get(IPAddress url) 
 {
+//  if (WiFi.status() != WL_CONNECTED) 
+//  {
+//    Serial.println("Network failure! Returning...");
+//    return;
+//  }
+  WiFiClient client;
+  const int httpPort = 80;
+  if (!client.connect(url, httpPort)) {
+    Serial.println("connection failed YO!!!!!");
+    return;
+  }
+  else{
+    Serial.println("YOYOYOYOYO");
+    return;
+  }
+}
+
+
+void http_post(const char *host, String api, uint16_t port, String http_payload, String http_headers)
+{
+
+  WiFiClient http_client;
+  
+  Serial.print("Host: " + (String)host + "api: "+ api + "port: " + port);
+
+  Serial.print("HTTP Connecting...");
+  int retry = 0; //retry counter
+  while((!http_client.connect(host, port)) && (retry < 30))
+  {
+      delay(100);
+      Serial.print(".");
+      retry++;
+  }
+  if(retry == 30) {
+    Serial.println("Connection failed");
+    return;
+  }
+  else {
+    Serial.println("Connected to web");
+  }
+
+
   HTTPClient http; //Object of class HTTPClient
-  DynamicJsonDocument header_json(strlen(http_headers) + 20);
-  DynamicJsonDocument payload_json(strlen(http_payload) + 200);
+  DynamicJsonDocument header_json(http_headers.length() + 20);
+  DynamicJsonDocument payload_json(http_payload.length() + 200);
 
   auto error_payload = deserializeJson(payload_json, http_payload);
   auto error_headers = deserializeJson(header_json, http_headers);
@@ -47,19 +107,12 @@ void http_post(const char *url, const char *http_payload, const char *http_heade
     return;
   }
 
-  const char* content_type = header_json["Content-Type"];
-  
+  String content_type = header_json["Content-Type"];
+  String url = "http://" + (String)host + ":" + (String)port + api;
+  Serial.println("Sending request to: " + url);
+
   http.begin(url);
   http.addHeader("Content-Type", content_type);
-
-  Serial.println("Printing the URL:");
-  Serial.println(url);
-  Serial.println("Printing the content-type");
-  Serial.println((const char*)header_json["Content-Type"]);
-  Serial.println("Printing the payload...");
-  serializeJsonPretty(payload_json, Serial);
-  Serial.println("Raw Payload:");
-  Serial.println(http_payload);
 
   Serial.println("Sending the POST request...");
   int http_code = http.POST(http_payload);
@@ -69,7 +122,13 @@ void http_post(const char *url, const char *http_payload, const char *http_heade
     Serial.println("POST request succeeded, dumping respnose...");
     Serial.println(http.getString());
   }
-  else Serial.println("POST request failed!");
+  else 
+  {
+    Serial.println("POST request failed!");
+    Serial.println(http_code);
+    Serial.println(http.writeToStream(&Serial));
+  }
+
   
   http.end();
 }

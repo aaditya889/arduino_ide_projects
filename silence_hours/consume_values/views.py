@@ -8,16 +8,18 @@ from .poller import poller
 import pytz
 from datetime import datetime, timezone
 import threading
+import time
 
 db = mysql.connect(
     host = "localhost",
     user = "root",
-    passwd = "asdfg12345",
+    # passwd = "asdfg12345",
+    passwd = "aaditya",
     database = "pod_assistant"
 )
 
 cursor = db.cursor()
-#cursor.execute("CREATE DATABASE pod_assistant")
+# cursor.execute("CREATE DATABASE pod_assistant")
 cursor.execute("""CREATE TABLE IF NOT EXISTS audio (
     id INT AUTO_INCREMENT PRIMARY KEY, 
     pod_name VARCHAR(255), 
@@ -31,7 +33,8 @@ GET_AUDIO_QUERY = 'select * from audio where created_at >= {}'
 
 ################# UTILS #########################################
 def convert_time_utc_to_mysql_format(datetime_object):
-    return str(datetime_object.astimezone(pytz.timezone('Asia/Kolkata'))).split('.')[0]
+    # return str(datetime_object.astimezone(pytz.timezone('Asia/Kolkata'))).split('.')[0]
+    return time.strftime("%Y-%m-%d %H:%M:%S")
  
 def get_current_time():
     return convert_time_utc_to_mysql_format(datetime.now())
@@ -91,3 +94,8 @@ def alert_on_noise(last_alert_time, threshold_audio_value, time_range_in_secs):
 worker = threading.Thread(target=alert_on_noise, args=(None, None, 60))
 worker.start()
 
+
+@api_view(['GET'])
+def test(request):
+
+    return JsonResponse({"hello":"world"}, status=status.HTTP_200_OK)

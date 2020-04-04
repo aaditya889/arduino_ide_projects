@@ -15,8 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from consume_values.views import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('consume/', include('consume_values.urls')),
+    path('', test),
 ]

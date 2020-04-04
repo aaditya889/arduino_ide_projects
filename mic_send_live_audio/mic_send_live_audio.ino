@@ -29,7 +29,7 @@ void loop()
 {
 //    audio_data = (audio_data << 10) | adc;
 
-    Serial.println("original:");
+//    Serial.println("original:");
     for(uint16_t i = 0; i < MAX_DATA_RETENTION; i+=2)
     {
       adc = analogRead(MIC);
