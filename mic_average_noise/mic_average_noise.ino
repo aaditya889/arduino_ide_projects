@@ -36,7 +36,7 @@ void find_average_and_reset()
 void setup() 
 {
   Serial.begin(SERIAL_BAUD_RATE);
-  Serial.setDebugOutput(true);
+//  Serial.setDebugOutput(true);
 //  pinMode(3, OUTPUT);
   connect_AP(ssid, password);
   
@@ -81,15 +81,9 @@ void loop()
   {
     end_time = timeClient.getFormattedTime();
     find_average_ticker.detach();
-
-    Serial.println("Posting the message");
+    
 //    __send_slack_message(start_time + " - " + end_time + ": " + String(current_unit_average));
     __post_message("{\"pod_name\": \"platform\", \"value\": \"" + String(current_unit_average) + "\"}");
-
-//    Serial.println("Getting the google message");
-//    http_get("http://google.com", 80);
-//    Serial.println("Getting the local message");
-//    http_get("192.168.1.17", 80);
     
     send_message = false;
     find_average_ticker.attach(time_interval_secs, find_average_and_reset);

@@ -5,15 +5,10 @@
 
 void http_get(const char* host, uint16_t http_port) 
 {
-//  if (WiFi.status() != WL_CONNECTED) 
-//  {
-//    Serial.println("Network failure! Returning...");
-//    return;
-//  }
   Serial.print("HOST: ");
   Serial.println(host);
 
-  HTTPClient http; //Object of class HTTPClient
+  HTTPClient http;
   WiFiClient client;
   const int httpPort = 80;
   if (!client.connect(host, httpPort)) {
@@ -46,35 +41,15 @@ void http_get(const char* host, uint16_t http_port)
 }
 
 
-void http_ip_get(IPAddress url) 
-{
-//  if (WiFi.status() != WL_CONNECTED) 
-//  {
-//    Serial.println("Network failure! Returning...");
-//    return;
-//  }
-  WiFiClient client;
-  const int httpPort = 80;
-  if (!client.connect(url, httpPort)) {
-    Serial.println("connection failed YO!!!!!");
-    return;
-  }
-  else{
-    Serial.println("YOYOYOYOYO");
-    return;
-  }
-}
-
-
 void http_post(const char *host, String api, uint16_t port, String http_payload, String http_headers)
 {
 
   WiFiClient http_client;
   
-  Serial.print("Host: " + (String)host + "api: "+ api + "port: " + port);
+  Serial.println("Host: " + (String)host + " API: "+ api + " Port: " + port);
 
   Serial.print("HTTP Connecting...");
-  int retry = 0; //retry counter
+  int retry = 0;
   while((!http_client.connect(host, port)) && (retry < 30))
   {
       delay(100);
