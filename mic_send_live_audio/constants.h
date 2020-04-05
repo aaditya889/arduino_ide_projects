@@ -9,3 +9,10 @@ const unsigned short diff_constant = 40;
 const short time_interval_secs = 10;
 const char REMOTE_IP[] = "192.168.1.17";
 const uint16_t REMOTE_PORT = 8000;
+
+
+const uint8_t INSTRUCTION_TIME_US = 10;
+// DEFINE AUDIO QUALITY
+const uint8_t BIT_DEPTH = 8;      //immutable for now!
+const uint8_t SAMPLE_RATE_KHZ = 16;
+const short CAPTURE_TIME_IN_MS = 20;
