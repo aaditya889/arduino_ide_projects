@@ -23,7 +23,7 @@ def convert_text_to_audio(message, audio_filename):
     slow=False
   )
   audio.save(file_path)
-  os.system("afplay " + file_path)
+  os.system("mpg123 " + file_path)
   
 
 if __name__ == '__main__':
