@@ -22,7 +22,9 @@ void setup()
   connect_AP(ssid, password);
 //  audio_data = malloc((MAX_DATA_RETENTION * 10 / 8) + 1);
 //  audio_data = (unsigned char *)malloc((MAX_DATA_RETENTION) * 2.5);
-  
+//  #if ARDUINO_VERSION <= 106
+//  Serial.println("THIS IS TRUE!");
+//  #endif
 }
 
 void loop()
@@ -50,12 +52,14 @@ void loop()
 //    Serial.println("Sending data");  
     
     udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
-    delay(1);
+//    delay(1);
+    delay(0.001);
 //    Serial.println(sizeof(audio_data));
     udp_client.write((char*)audio_data, sizeof(audio_data));
 //    delay(1);
     udp_client.endPacket();
 //    Serial.pr intln(udp_client.endPacket());
+//    delay(0.01);
     delay(1);
 //    delay(600000);
 }
