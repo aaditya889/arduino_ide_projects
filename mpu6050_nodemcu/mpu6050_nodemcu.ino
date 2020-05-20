@@ -7,7 +7,7 @@
 
 WiFiUDP udp_client;
 
-char mpu_data[100];
+char mpu_data[150];
 // MPU6050 Slave Device Address
 const uint8_t MPU6050SlaveAddress = 0x68;
 
@@ -33,6 +33,7 @@ const uint8_t MPU6050_REGISTER_ACCEL_XOUT_H =  0x3B;
 const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
 
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
+double acc_x_avg = 0, acc_y_avg = 0, acc_z_avg = 0, gyro_x_avg = 0, gyro_y_avg = 0, gyro_z_avg = 0;
 
 void setup() 
 {
@@ -49,13 +50,13 @@ void loop()
   Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
   
   //divide each with their sensitivity scale factor
-  Ax = (double)AccelX/AccelScaleFactor;
-  Ay = (double)AccelY/AccelScaleFactor;
-  Az = (double)AccelZ/AccelScaleFactor;
+  Ax = ((double)AccelX / AccelScaleFactor) - acc_x_avg;
+  Ay = ((double)AccelY / AccelScaleFactor) - acc_y_avg;
+  Az = ((double)AccelZ / AccelScaleFactor) - acc_z_avg;
   T = (double)Temperature/340+36.53; //temperature formula
-  Gx = (double)GyroX/GyroScaleFactor;
-  Gy = (double)GyroY/GyroScaleFactor;
-  Gz = (double)GyroZ/GyroScaleFactor;
+  Gx = ((double)GyroX / GyroScaleFactor) - gyro_x_avg;
+  Gy = ((double)GyroY / GyroScaleFactor) - gyro_y_avg;
+  Gz = ((double)GyroZ / GyroScaleFactor) - gyro_z_avg;
 //
 //  Serial.print("Ax: "); Serial.print(Ax);
 //  Serial.print(" Ay: "); Serial.print(Ay);
@@ -65,15 +66,14 @@ void loop()
 //  Serial.print(" Gy: "); Serial.print(Gy);
 //  Serial.print(" Gz: "); Serial.println(Gz);
 
-  sprintf(mpu_data, "AX: %lf AY: %lf AZ: %lf GX: %lf GY: %lf GZ: %lf T: %lf", Ax, Ay, Az, Gx, Gy, Gz, T);
+  sprintf(mpu_data, "AX: %10lf AY: %10lf AZ: %10lf GX: %10lf GY: %10lf GZ: %10lf T: %10lf", Ax, Ay, Az, Gx, Gy, Gz, T);
 
-  Serial.println(mpu_data);
-  
+//  Serial.println(mpu_data);
+
+  // udp send takes around 700 - 750 microseconds
   udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
   udp_client.write((char*)mpu_data, strlen(mpu_data));
   udp_client.endPacket();
-
-  delay(100);
 }
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
@@ -116,4 +116,34 @@ void MPU6050_Init()
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_USER_CTRL, 0x00);
   Serial.println("MPU6050 initialised!");
+
+  Serial.println("");
+  uint8_t avg_count = 100;
+  
+  for (int i = 0; i < avg_count; i++)
+  {
+    Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
+    acc_x_avg += (double) AccelX / (AccelScaleFactor);
+    acc_y_avg += (double) AccelY / (AccelScaleFactor);
+    acc_z_avg += (double) AccelZ / (AccelScaleFactor);
+    
+    gyro_x_avg += (double)GyroX / (GyroScaleFactor);
+    gyro_y_avg += (double)GyroY / (GyroScaleFactor);
+    gyro_z_avg += (double)GyroZ / (GyroScaleFactor);       
+  }
+  acc_x_avg = (double) acc_x_avg / avg_count;
+  acc_y_avg = (double) acc_y_avg / avg_count;
+  acc_z_avg = (double) acc_z_avg / avg_count;
+  gyro_x_avg = (double) gyro_x_avg / avg_count;
+  gyro_y_avg = (double) gyro_y_avg / avg_count;
+  gyro_z_avg = (double) gyro_z_avg / avg_count;
+  
+  Serial.println("Got average values:");
+  Serial.println(acc_x_avg);
+  Serial.println(acc_y_avg);
+  Serial.println(acc_z_avg);
+  Serial.println(gyro_x_avg);
+  Serial.println(gyro_y_avg);
+  Serial.println(gyro_z_avg);
+  delay(5000);
 }
