@@ -3,17 +3,17 @@
 
 void connect_AP(const char *ssid, const char *password)
 {
-  WiFi.mode(WIFI_OFF);        //Prevents reconnection issue (taking too long to connect)
-  delay(1000);
-  WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  WiFi.mode(WIFI_STA);        //Only Station No AP, This line hides the viewing of ESP as wifi hotspot
+//  WiFi.mode(WIFI_OFF);        //Prevents reconnection issue (taking too long to connect)
+//  delay(1000);
+//  WiFi.setSleepMode(WIFI_NONE_SLEEP);
+//  WiFi.mode(WIFI_STA);        //Only Station No AP, This line hides the viewing of ESP as wifi hotspot
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   
   WiFi.begin(ssid, password);     //Connect to your WiFi router
   Serial.println("");
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
-  Serial.print("Connecting");
+  Serial.print("Connecting...");
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) 
   {
