@@ -88,6 +88,8 @@ void loop()
   udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
   udp_client.write((char*)mpu_data, strlen(mpu_data));
   udp_client.endPacket();
+
+  delay(1000);
 }
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
