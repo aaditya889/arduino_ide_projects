@@ -4,7 +4,9 @@
 #include <Servo.h>
 #include <Wire.h>
 #include "constants.h"
+#include <Math.h>
 #include <BasicLinearAlgebra.h>
+#define MEGA 1000000
 #define AX 0
 #define AY 1
 #define AZ 2
@@ -12,14 +14,17 @@
 #define GY 1
 #define GZ 2
 
+
 using namespace BLA;
 WiFiUDP udp_client;
 
 // sensitivity scale factor respective to full scale setting provided in datasheet 
 const uint16_t AccelScaleFactor = 16384;
 const uint16_t GyroScaleFactor = 131;
+uint32_t GYRO_START_TIME, GYRO_END_TIME;
+const uint8_t ACC_WEIGHT = 0.2;
 
-BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG;
+BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, EULER_ANGLES;
 //int16_t Temperature;
 
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
@@ -64,8 +69,9 @@ void setup()
 
 void loop()
 {
-  double Ax, Ay, Az, T, Gx, Gy, Gz;
-  
+//  double Ax, Ay, Az, T, Gx, Gy, Gz;
+
+  GYRO_START_TIME = micros();
   Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
   
   //divide each with their sensitivity scale factor
@@ -77,9 +83,15 @@ void loop()
 //  Gy = ((double)GyroY / GyroScaleFactor) - gyro_y_avg;
 //  Gz = ((double)GyroZ / GyroScaleFactor) - gyro_z_avg;
 
-  MPU_ACC = (MPU_ACC / (double) AccelScaleFactor);
+  for (int i = 0; i < MPU_ACC.GetRowCount(); i++) MPU_ACC(i) = asin((MPU_ACC(i) / (double) AccelScaleFactor));
+  
+//  MPU_ACC = asin((MPU_ACC / (double) AccelScaleFactor));
   MPU_GYRO = (MPU_GYRO / (double) GyroScaleFactor) - MPU_GYRO_AVG;
 
+  GYRO_END_TIME = micros();
+
+  EULER_ANGLES =  (MPU_ACC * (double)ACC_WEIGHT) + (MPU_GYRO * ((double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA)) * (double)(1 - ACC_WEIGHT));
+  
   sprintf(mpu_data, "AX: %10lf AY: %10lf AZ: %10lf GX: %10lf GY: %10lf GZ: %10lf", MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ), MPU_GYRO(GX), MPU_GYRO(GY), MPU_GYRO(GZ));
 
   Serial.println(mpu_data);
