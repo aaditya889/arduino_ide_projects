@@ -69,15 +69,15 @@ void loop()
   Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
   
   //divide each with their sensitivity scale factor
-  Ax = ((double)AccelX / AccelScaleFactor) - acc_x_avg;
-  Ay = ((double)AccelY / AccelScaleFactor) - acc_y_avg;
-  Az = ((double)AccelZ / AccelScaleFactor) - acc_z_avg;
-  T = (double)Temperature/340+36.53; //temperature formula
-  Gx = ((double)GyroX / GyroScaleFactor) - gyro_x_avg;
-  Gy = ((double)GyroY / GyroScaleFactor) - gyro_y_avg;
-  Gz = ((double)GyroZ / GyroScaleFactor) - gyro_z_avg;
+//  Ax = ((double)AccelX / AccelScaleFactor) - acc_x_avg;
+//  Ay = ((double)AccelY / AccelScaleFactor) - acc_y_avg;
+//  Az = ((double)AccelZ / AccelScaleFactor) - acc_z_avg;
+//  T = (double)Temperature/340+36.53; //temperature formula
+//  Gx = ((double)GyroX / GyroScaleFactor) - gyro_x_avg;
+//  Gy = ((double)GyroY / GyroScaleFactor) - gyro_y_avg;
+//  Gz = ((double)GyroZ / GyroScaleFactor) - gyro_z_avg;
 
-  MPU_ACC = (MPU_ACC / (double) AccelScaleFactor) - MPU_ACC_AVG;
+  MPU_ACC = (MPU_ACC / (double) AccelScaleFactor);
   MPU_GYRO = (MPU_GYRO / (double) GyroScaleFactor) - MPU_GYRO_AVG;
 
   sprintf(mpu_data, "AX: %10lf AY: %10lf AZ: %10lf GX: %10lf GY: %10lf GZ: %10lf", MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ), MPU_GYRO(GX), MPU_GYRO(GY), MPU_GYRO(GZ));
@@ -88,8 +88,6 @@ void loop()
   udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
   udp_client.write((char*)mpu_data, strlen(mpu_data));
   udp_client.endPacket();
-
-  delay(1000);
 }
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
