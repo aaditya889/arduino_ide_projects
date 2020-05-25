@@ -4,7 +4,7 @@
 #include <Servo.h>
 #include <Wire.h>
 #include "constants.h"
-#include <Math.h>
+#include <math.h>
 #include <BasicLinearAlgebra.h>
 #define MEGA 1000000
 #define AX 0
@@ -13,7 +13,6 @@
 #define GX 0
 #define GY 1
 #define GZ 2
-
 
 using namespace BLA;
 WiFiUDP udp_client;
@@ -24,7 +23,9 @@ const uint16_t GyroScaleFactor = 131;
 uint32_t GYRO_START_TIME, GYRO_END_TIME;
 const uint8_t ACC_WEIGHT = 0.2;
 
-BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, EULER_ANGLES;
+BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, EULER_ANGLES, COMP_MATRIX, GYRO_ANGLES;
+BLA::Matrix<4> INIT_POW_MATRIX, POW_MATRIX;
+
 //int16_t Temperature;
 
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
@@ -56,15 +57,18 @@ void setup()
 {
   Serial.begin(115200);
   connect_AP(ssid, password);
-  BLA::Matrix<5> AA = {1,2,3,4,5};
-  AA /= (double)5;
-  Serial << "AA:" << AA;
+  MPU_ACC_OFF = {0,0,1};
+//  AA /= (double)5;
+//  Serial << "AA:" << AA;
   MPU_ACC.Fill(0);
   MPU_GYRO.Fill(0);
   MPU_ACC_AVG.Fill(0);
   MPU_GYRO_AVG.Fill(0);
   Wire.begin(sda, scl);
   MPU6050_Init();
+  GYRO_ANGLES = {0,0,0};
+  INIT_POW_MATRIX = {20,20,20,20};    //calculate the actual values
+  POW_MATRIX = INIT_POW_MATRIX;
 }
 
 void loop()
@@ -82,24 +86,34 @@ void loop()
 //  Gx = ((double)GyroX / GyroScaleFactor) - gyro_x_avg;
 //  Gy = ((double)GyroY / GyroScaleFactor) - gyro_y_avg;
 //  Gz = ((double)GyroZ / GyroScaleFactor) - gyro_z_avg;
-
-  for (int i = 0; i < MPU_ACC.GetRowCount(); i++) MPU_ACC(i) = asin((MPU_ACC(i) / (double) AccelScaleFactor));
   
-//  MPU_ACC = asin((MPU_ACC / (double) AccelScaleFactor));
+  MPU_ACC = (MPU_ACC / (double) AccelScaleFactor) - MPU_ACC_AVG + MPU_ACC_OFF;
   MPU_GYRO = (MPU_GYRO / (double) GyroScaleFactor) - MPU_GYRO_AVG;
 
+  for (int i = 0; i < MPU_ACC.GetRowCount(); i++) 
+  {
+    MPU_ACC(i) = MPU_ACC(i) > 1 ? 1 : MPU_ACC(i);
+//    Serial << "For i: " << i << ", value = " << MPU_ACC(i) << "\n";
+    MPU_ACC(i) = asin((MPU_ACC(i))) * (180 / PI);
+  }
+  
   GYRO_END_TIME = micros();
+
+  Serial << "GYRO_READINGS ==> AX: " << MPU_GYRO(0) << " AY: " << MPU_GYRO(1) << " AZ: " << MPU_GYRO(2) << "\n";
+  GYRO_ANGLES += (MPU_GYRO * 2 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
 
   EULER_ANGLES =  (MPU_ACC * (double)ACC_WEIGHT) + (MPU_GYRO * ((double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA)) * (double)(1 - ACC_WEIGHT));
   
   sprintf(mpu_data, "AX: %10lf AY: %10lf AZ: %10lf GX: %10lf GY: %10lf GZ: %10lf", MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ), MPU_GYRO(GX), MPU_GYRO(GY), MPU_GYRO(GZ));
 
-  Serial.println(mpu_data);
+  Serial << "GYRO_ANGLES ==> AX: " << GYRO_ANGLES(0) << " AY: " << GYRO_ANGLES(1) << " AZ: " << GYRO_ANGLES(2) << "\n";
+//  Serial.println(mpu_data);
 
   // udp send takes around 700 - 750 microseconds
   udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
   udp_client.write((char*)mpu_data, strlen(mpu_data));
   udp_client.endPacket();
+//  delay(1000);
 }
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
@@ -131,6 +145,8 @@ void MPU6050_Init()
 {
   delay(150);
   Serial.println("Initialising MPU6050...");
+  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_USER_CTRL, 0x01);
+  delay(100);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
@@ -144,7 +160,7 @@ void MPU6050_Init()
   Serial.println("MPU6050 initialised!");
 
   Serial.println("");
-  uint8_t avg_count = 100;
+  uint8_t avg_count = 500;
   
   for (int i = 0; i < avg_count; i++)
   {
@@ -155,4 +171,8 @@ void MPU6050_Init()
   }
   MPU_ACC_AVG /= (double)avg_count;
   MPU_GYRO_AVG /= (double)avg_count;
+
+  Serial << "Got GYRO_AVG: " << MPU_GYRO_AVG << "\nGot ACC_AVG: " << MPU_ACC_AVG << "\n";
+  delay(4000);
+
 }
