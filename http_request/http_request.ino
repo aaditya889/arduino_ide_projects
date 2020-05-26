@@ -118,7 +118,7 @@ void loop()
   char *test_url_2 = "https://google.com";
   char *test_url_3 = "http://google.com";
   char * google_SHA1 = "F9:D6:3C:0F:77:F9:CA:BD:8A:D9:B6:16:40:A1:62:7E:40:F7:F7:DD";
-  const char *SLACK_POST_MESSAGE_URL = "https://hooks.slack.com/services/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";
+  const char *SLACK_POST_MESSAGE_URL = "https://hooks.slack.com/services/<CODE>";
   const char *slack_payload = "{\"channel\": \"@aadityasharma\",\"username\": \"test_user\",\"text\": \"test_message\",\"icon_emoji\": \":rube:\"}";
   const char *slack_headers = "{\"Content-Type\": \"application/json\"}";
    
