@@ -10,9 +10,28 @@
 #define AX 0
 #define AY 1
 #define AZ 2
+#define EX 0
+#define EY 1
+#define EZ 2
 #define GX 0
 #define GY 1
 #define GZ 2
+#define ROLL 0
+#define PITCH 1
+#define YAW 2
+#define FRONTMA 0
+#define FRONTMB 1
+#define REARMA 2
+#define REARMB 3
+#define FRONTA D0
+#define FRONTB D1
+#define REARA D2
+#define REARB D3
+
+//  TODO: TURN THE FILTER FUNCTION INTO A BLACK BOX, AND REDUCE THE CODE IN THE LOOP() FUNCTION
+//  TODO: REDUCE GLOBAL VARIABLE COUNT AND RECTIFY THE LINTING!!
+//  TODO: TRY TO REUSE VARIABLES AND REDUCE THE AMOUNT OF MEMORY USED (TO COMPENSATE FOR THE POSSIBILITY OF CODE EXPANSION)!
+//  MOVE SOME OF THE GLOBAL VARS TO CONSTANTS FILE
 
 using namespace BLA;
 WiFiUDP udp_client;
@@ -21,11 +40,12 @@ WiFiUDP udp_client;
 const uint16_t AccelScaleFactor = 16384;
 const uint16_t GyroScaleFactor = 131;
 uint32_t GYRO_START_TIME, GYRO_END_TIME;
-const uint8_t ACC_WEIGHT = 0.2;
+const double ACC_WEIGHT = 0.02;
+uint8_t FLIGHT_THRUST = 60;
 
-BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, EULER_ANGLES, COMP_MATRIX, GYRO_ANGLES;
-BLA::Matrix<4> INIT_POW_MATRIX, POW_MATRIX;
-
+BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, ANGLE_DELTA, GYRO_ANGLES, YPR_GYRO = {0,0,0}, YPR_ACC = {0,0,0}, YPR = {0,0,0}, DES_YPR = {0,0,0};
+BLA::Matrix<4> THRUST_MATRIX;
+BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0};
 //int16_t Temperature;
 
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
@@ -64,11 +84,21 @@ void setup()
   MPU_GYRO.Fill(0);
   MPU_ACC_AVG.Fill(0);
   MPU_GYRO_AVG.Fill(0);
+  ANGLE_DELTA.Fill(0);
+  GYRO_ANGLES.Fill(0);
+  YPR_GYRO.Fill(0);
+  YPR_ACC.Fill(0);
+  YPR.Fill(0);
+  DES_YPR.Fill(0);
+  THRUST_MATRIX.Fill(FLIGHT_THRUST);
   Wire.begin(sda, scl);
+  
+  Serial << "MPU_ACC_AVG: " << MPU_ACC_AVG << "\nMPU_GYRO_AVG: " << MPU_GYRO_AVG << "\nMPU_ACC: " << MPU_ACC << "\nMPU_GYRO: " << MPU_GYRO;
+  delay(10000);
+
+//  INIT_POW_MATRIX = {20,20,20,20};    //calculate the actual values
+//  POW_MATRIX = INIT_POW_MATRIX;
   MPU6050_Init();
-  GYRO_ANGLES = {0,0,0};
-  INIT_POW_MATRIX = {20,20,20,20};    //calculate the actual values
-  POW_MATRIX = INIT_POW_MATRIX;
 }
 
 void loop()
@@ -92,28 +122,61 @@ void loop()
 
   for (int i = 0; i < MPU_ACC.GetRowCount(); i++) 
   {
-    MPU_ACC(i) = MPU_ACC(i) > 1 ? 1 : MPU_ACC(i);
-//    Serial << "For i: " << i << ", value = " << MPU_ACC(i) << "\n";
-    MPU_ACC(i) = asin((MPU_ACC(i))) * (180 / PI);
+    YPR_ACC(i) = atan2f((double)(MPU_ACC(i)), (double)MPU_ACC(AZ)) * (180 / PI);
   }
-  
+
   GYRO_END_TIME = micros();
 
-  Serial << "GYRO_READINGS ==> AX: " << MPU_GYRO(0) << " AY: " << MPU_GYRO(1) << " AZ: " << MPU_GYRO(2) << "\n";
-  GYRO_ANGLES += (MPU_GYRO * 2 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
+  ANGLE_DELTA = (MPU_GYRO * 4.0 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
+  YPR_GYRO += ADX * (double)ANGLE_DELTA(GX) + ADY * (double)ANGLE_DELTA(GY) + ADZ * (double)ANGLE_DELTA(GZ);
 
-  EULER_ANGLES =  (MPU_ACC * (double)ACC_WEIGHT) + (MPU_GYRO * ((double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA)) * (double)(1 - ACC_WEIGHT));
+  YPR = YPR_ACC * (double)(ACC_WEIGHT) + YPR_GYRO * (double)(1 - ACC_WEIGHT);
+  Serial  << "[YPR] => " << YPR << " [YPR_GYRO] => " << YPR_GYRO << " [YPR_ACC] => " << YPR_ACC << "\n";
+  YPR_GYRO = YPR;
+  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf AX: %10lf AY: %10lf AZ: %10lf", YPR(AX), YPR(AY), YPR(AZ), MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ));
+
+  YPR = YPR - DES_YPR;
+
+  update_thrust_vector();
   
-  sprintf(mpu_data, "AX: %10lf AY: %10lf AZ: %10lf GX: %10lf GY: %10lf GZ: %10lf", MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ), MPU_GYRO(GX), MPU_GYRO(GY), MPU_GYRO(GZ));
-
-  Serial << "GYRO_ANGLES ==> AX: " << GYRO_ANGLES(0) << " AY: " << GYRO_ANGLES(1) << " AZ: " << GYRO_ANGLES(2) << "\n";
-//  Serial.println(mpu_data);
-
   // udp send takes around 700 - 750 microseconds
   udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
   udp_client.write((char*)mpu_data, strlen(mpu_data));
   udp_client.endPacket();
-//  delay(1000);
+}
+
+void update_thrust_vector()
+{
+  uint8_t roll_deviation = abs(YPR(ROLL));
+  uint8_t pitch_deviation = abs(YPR(PITCH));
+
+// Fix roll
+  if (YPR(ROLL) < 0) 
+  {
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
+    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST); 
+  }
+  else
+  {
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST);
+    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
+  }
+//  Fix Pitch
+  if (YPR(ROLL) < 0) 
+  {
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
+    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST); 
+  }
+  else
+  {
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST);
+    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
+  }
+}
+
+void update_drone_thrust()
+{
+  
 }
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
@@ -131,6 +194,7 @@ void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
   Wire.write(regAddress);
   Wire.endTransmission();
   Wire.requestFrom(deviceAddress, (uint8_t)14);
+  while(!Wire.available()) {}
   AccelX = MPU_ACC(AX) = (int16_t)(((int16_t)Wire.read()<<8) | Wire.read());    // Acc X
   AccelY = MPU_ACC(AY) = (int16_t)(((int16_t)Wire.read()<<8) | Wire.read());    // Acc Y
   AccelZ = MPU_ACC(AZ) = (int16_t)(((int16_t)Wire.read()<<8) | Wire.read());    //Acc Z
@@ -143,10 +207,9 @@ void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
 //configure MPU6050
 void MPU6050_Init()
 {
-  delay(150);
   Serial.println("Initialising MPU6050...");
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_USER_CTRL, 0x01);
-  delay(100);
+  delay(2000);
+//  delay(100);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
