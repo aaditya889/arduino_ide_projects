@@ -33,6 +33,9 @@
 //  TODO: TRY TO REUSE VARIABLES AND REDUCE THE AMOUNT OF MEMORY USED (TO COMPENSATE FOR THE POSSIBILITY OF CODE EXPANSION)!
 //  MOVE SOME OF THE GLOBAL VARS TO CONSTANTS FILE
 
+//  function definitions
+uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle);
+
 using namespace BLA;
 WiFiUDP udp_client;
 
@@ -151,65 +154,55 @@ void update_thrust_vector()
 {
   uint8_t roll_deviation = abs(YPR(ROLL));
   uint8_t pitch_deviation = abs(YPR(PITCH));
-  int roll_inc, roll_dec, pitch_inc , pitch_dec, front_a, front_b, rear_a, rear_b;
-  roll_inc = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST);
-  roll_dec = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
-  pitch_inc_wrt_roll_inc = map(pitch_deviation, 0, 90, roll_inc, 2 * FLIGHT_THRUST);
-  pitch_inc_wrt_roll_dec = map(pitch_deviation, 0, 90, roll_dec, 2 * FLIGHT_THRUST);
-  pitch_dec_wrt_roll_inc = map(pitch_deviation, 90, 0, 0, roll_inc);
-  pitch_dec_wrt_roll_dec = map(pitch_deviation, 90, 0, 0, roll_dec);
+  uint8_t reference_vector[4] = [FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST];
   
-//  Serial << "YPR => " << YPR << " roll_deviation: " << roll_deviation << " pitch_deviation " << pitch_deviation << "\n";
-
-//  Serial << "value a " << a << " value b " << b << " c " << c << " d " << d << "\n"; 
-// Fix roll
-  if (YPR(ROLL) < 0) 
-  {
-    Serial << " AA";
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = (double)roll_dec;
-    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = (double)roll_inc; 
-
-    front_a = front_b = roll_dec;
-    rear_a = rear_b = roll_inc; 
-  }
-  else if (YPR(ROLL) > 0) 
-  {
-    Serial << " BB";
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = (double)roll_inc;
-    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = (double)roll_dec;
-
-    front_a = front_b = roll_inc;
-    rear_a = rear_b = roll_dec; 
-  }
-//  Fix Pitch
-  if (YPR(PITCH) < 0) 
-  {
-    Serial << " CC";
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = pitch_dec;
-    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = pitch_inc; 
-
-    front_a = rear_a = pitch_dec;
-    front_b = rear_b = pitch_inc; 
-  }
-  else if (YPR(PITCH) > 0) 
-  {
-    Serial << " DD";
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = pitch_inc;
-    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = pitch_dec;
-
-    front_a = rear_a = pitch_inc;
-    front_b = rear_b = pitch_dec; 
-  }
-
-//  Serial << "FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
-  Serial << "FRONT => MA: " <<  front_a << " MB: " << front_b << " REAR => MA: " << rear_a << " MB: " << rear_b << "\n";
-//  Serial << "\n";
+  fix_roll(reference_vector, abs(YPR(ROLL)), 0, 2 * FLIGHT_THRUST);
+  fix_pitch(reference_vector, abs(YPR(PITCH)), 0, 2 * FLIGHT_THRUST);
+  
+  Serial << "FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
 }
 
-//void update_drone_thrust()
-//{
-//  
-//}
+void fix_roll (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value)
+{
+  if (YPR(ROLL) < 0)  // left tilt
+  {
+    THRUST_MATRIX(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, true);
+    THRUST_MATRIX(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, true);
+    THRUST_MATRIX(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, false);
+    THRUST_MATRIX(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, false);
+  }
+  else    // right tilt
+  {
+    THRUST_MATRIX(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, false);
+    THRUST_MATRIX(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, false);
+    THRUST_MATRIX(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, true);
+    THRUST_MATRIX(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, true);
+  }
+}
+
+void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value)
+{
+  if (YPR(PITCH) < 0)  // backward lean
+  {
+    THRUST_MATRIX(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, false);
+    THRUST_MATRIX(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, false);
+    THRUST_MATRIX(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, true);
+    THRUST_MATRIX(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, true);
+  }
+  else    // forward lean
+  {
+    THRUST_MATRIX(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, true);
+    THRUST_MATRIX(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, true);
+    THRUST_MATRIX(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, false);
+    THRUST_MATRIX(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, false);
+  }
+}
+
+
+uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle) 
+{
+  return (throttle ? map(value, 0, 90, reference, max_value) : map(value, 90, 0, min_value, reference));
+}
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
 {
