@@ -131,13 +131,15 @@ void loop()
   YPR_GYRO += ADX * (double)ANGLE_DELTA(GX) + ADY * (double)ANGLE_DELTA(GY) + ADZ * (double)ANGLE_DELTA(GZ);
 
   YPR = YPR_ACC * (double)(ACC_WEIGHT) + YPR_GYRO * (double)(1 - ACC_WEIGHT);
-  Serial  << "[YPR] => " << YPR << " [YPR_GYRO] => " << YPR_GYRO << " [YPR_ACC] => " << YPR_ACC << "\n";
+//  Serial << "[YPR] => " << YPR << " [YPR_GYRO] => " << YPR_GYRO << " [YPR_ACC] => " << YPR_ACC << "\n";
   YPR_GYRO = YPR;
-  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf AX: %10lf AY: %10lf AZ: %10lf", YPR(AX), YPR(AY), YPR(AZ), MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ));
 
   YPR = YPR - DES_YPR;
 
   update_thrust_vector();
+
+//  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf AX: %10lf AY: %10lf AZ: %10lf", YPR(AX), YPR(AY), YPR(AZ), MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ));
+  sprintf(mpu_data, "TMFA: %10lf TMFB: %10lf TMRA: %10lf TMRB: %10lf", THRUST_MATRIX(FRONTMA), THRUST_MATRIX(FRONTMB), THRUST_MATRIX(REARMA), THRUST_MATRIX(REARMB));
   
   // udp send takes around 700 - 750 microseconds
   udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
@@ -149,35 +151,65 @@ void update_thrust_vector()
 {
   uint8_t roll_deviation = abs(YPR(ROLL));
   uint8_t pitch_deviation = abs(YPR(PITCH));
+  int roll_inc, roll_dec, pitch_inc , pitch_dec, front_a, front_b, rear_a, rear_b;
+  roll_inc = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST);
+  roll_dec = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
+  pitch_inc_wrt_roll_inc = map(pitch_deviation, 0, 90, roll_inc, 2 * FLIGHT_THRUST);
+  pitch_inc_wrt_roll_dec = map(pitch_deviation, 0, 90, roll_dec, 2 * FLIGHT_THRUST);
+  pitch_dec_wrt_roll_inc = map(pitch_deviation, 90, 0, 0, roll_inc);
+  pitch_dec_wrt_roll_dec = map(pitch_deviation, 90, 0, 0, roll_dec);
+  
+//  Serial << "YPR => " << YPR << " roll_deviation: " << roll_deviation << " pitch_deviation " << pitch_deviation << "\n";
 
+//  Serial << "value a " << a << " value b " << b << " c " << c << " d " << d << "\n"; 
 // Fix roll
   if (YPR(ROLL) < 0) 
   {
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
-    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST); 
+    Serial << " AA";
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = (double)roll_dec;
+    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = (double)roll_inc; 
+
+    front_a = front_b = roll_dec;
+    rear_a = rear_b = roll_inc; 
   }
-  else
+  else if (YPR(ROLL) > 0) 
   {
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST);
-    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
+    Serial << " BB";
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(FRONTMB) = (double)roll_inc;
+    THRUST_MATRIX(REARMA) = THRUST_MATRIX(REARMB) = (double)roll_dec;
+
+    front_a = front_b = roll_inc;
+    rear_a = rear_b = roll_dec; 
   }
 //  Fix Pitch
-  if (YPR(ROLL) < 0) 
+  if (YPR(PITCH) < 0) 
   {
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
-    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST); 
+    Serial << " CC";
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = pitch_dec;
+    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = pitch_inc; 
+
+    front_a = rear_a = pitch_dec;
+    front_b = rear_b = pitch_inc; 
   }
-  else
+  else if (YPR(PITCH) > 0) 
   {
-    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = map(roll_deviation, 0, 90, FLIGHT_THRUST, 2 * FLIGHT_THRUST);
-    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = map(roll_deviation, 90, 0, 0, FLIGHT_THRUST);
+    Serial << " DD";
+    THRUST_MATRIX(FRONTMA) = THRUST_MATRIX(REARMA) = pitch_inc;
+    THRUST_MATRIX(FRONTMB) = THRUST_MATRIX(REARMB) = pitch_dec;
+
+    front_a = rear_a = pitch_inc;
+    front_b = rear_b = pitch_dec; 
   }
+
+//  Serial << "FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
+  Serial << "FRONT => MA: " <<  front_a << " MB: " << front_b << " REAR => MA: " << rear_a << " MB: " << rear_b << "\n";
+//  Serial << "\n";
 }
 
-void update_drone_thrust()
-{
-  
-}
+//void update_drone_thrust()
+//{
+//  
+//}
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
 {
