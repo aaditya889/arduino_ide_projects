@@ -97,10 +97,8 @@ void setup()
   Wire.begin(sda, scl);
   
   Serial << "MPU_ACC_AVG: " << MPU_ACC_AVG << "\nMPU_GYRO_AVG: " << MPU_GYRO_AVG << "\nMPU_ACC: " << MPU_ACC << "\nMPU_GYRO: " << MPU_GYRO;
-  delay(10000);
-
-//  INIT_POW_MATRIX = {20,20,20,20};    //calculate the actual values
-//  POW_MATRIX = INIT_POW_MATRIX;
+  delay(200);
+  
   MPU6050_Init();
 }
 
@@ -154,12 +152,12 @@ void update_thrust_vector()
 {
   uint8_t roll_deviation = abs(YPR(ROLL));
   uint8_t pitch_deviation = abs(YPR(PITCH));
-  uint8_t reference_vector[4] = [FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST];
+  uint8_t reference_vector[4] = {FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST};
   
   fix_roll(reference_vector, abs(YPR(ROLL)), 0, 2 * FLIGHT_THRUST);
   fix_pitch(reference_vector, abs(YPR(PITCH)), 0, 2 * FLIGHT_THRUST);
   
-  Serial << "FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
+  Serial << "new FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
 }
 
 void fix_roll (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value)
@@ -201,7 +199,7 @@ void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value,
 
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle) 
 {
-  return (throttle ? map(value, 0, 90, reference, max_value) : map(value, 90, 0, min_value, reference));
+  return (throttle ? map(value, 0, 90, reference, max_val) : map(value, 90, 0, min_val, reference));
 }
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
@@ -233,8 +231,7 @@ void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
 void MPU6050_Init()
 {
   Serial.println("Initialising MPU6050...");
-  delay(2000);
-//  delay(100);
+  delay(200);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
@@ -261,6 +258,12 @@ void MPU6050_Init()
   MPU_GYRO_AVG /= (double)avg_count;
 
   Serial << "Got GYRO_AVG: " << MPU_GYRO_AVG << "\nGot ACC_AVG: " << MPU_ACC_AVG << "\n";
-  delay(4000);
+  
+  if (MPU_GYRO_AVG(GZ) > 4.0)   // TODO: Try to fix this without resetting!
+  {
+    Serial << "Got incorrect average values, resetting the module...\n";
+    ESP.restart(); 
+  }
+  delay(400);
 
 }
