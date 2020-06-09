@@ -2,6 +2,10 @@
 #define NTP_INTERVAL 60 * 1000    // In milliseconds
 #define SERIAL_BAUD_RATE 115200
 #define MAX_DATA_RETENTION 1024
+#define FRONTMA 0
+#define FRONTMB 1
+#define REARMA 2
+#define REARMB 3
 
 const char *ssid = "sharma";
 const char *password = "H0m$#@12345";

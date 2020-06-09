@@ -5,7 +5,8 @@
 #include <Wire.h>
 #include "constants.h"
 #include <math.h>
-#include <BasicLinearAlgebra.h>
+#include "pwm.h"
+
 #define MEGA 1000000
 #define AX 0
 #define AY 1
@@ -19,14 +20,6 @@
 #define ROLL 0
 #define PITCH 1
 #define YAW 2
-#define FRONTMA 0
-#define FRONTMB 1
-#define REARMA 2
-#define REARMB 3
-#define FRONTA D0
-#define FRONTB D1
-#define REARA D2
-#define REARB D3
 
 //  TODO: TURN THE FILTER FUNCTION INTO A BLACK BOX, AND REDUCE THE CODE IN THE LOOP() FUNCTION
 //  TODO: REDUCE GLOBAL VARIABLE COUNT AND RECTIFY THE LINTING!!
@@ -100,6 +93,7 @@ void setup()
   delay(200);
   
   MPU6050_Init();
+  calibrate_esc();
 }
 
 void loop()
@@ -135,12 +129,14 @@ void loop()
 //  Serial << "[YPR] => " << YPR << " [YPR_GYRO] => " << YPR_GYRO << " [YPR_ACC] => " << YPR_ACC << "\n";
   YPR_GYRO = YPR;
 
+  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf AX: %10lf AY: %10lf AZ: %10lf", YPR(AX), YPR(AY), YPR(AZ), MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ));
+  
   YPR = YPR - DES_YPR;
 
   update_thrust_vector();
 
 //  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf AX: %10lf AY: %10lf AZ: %10lf", YPR(AX), YPR(AY), YPR(AZ), MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ));
-  sprintf(mpu_data, "TMFA: %10lf TMFB: %10lf TMRA: %10lf TMRB: %10lf", THRUST_MATRIX(FRONTMA), THRUST_MATRIX(FRONTMB), THRUST_MATRIX(REARMA), THRUST_MATRIX(REARMB));
+//  sprintf(mpu_data, "TMFA: %10lf TMFB: %10lf TMRA: %10lf TMRB: %10lf", THRUST_MATRIX(FRONTMA), THRUST_MATRIX(FRONTMB), THRUST_MATRIX(REARMA), THRUST_MATRIX(REARMB));
   
   // udp send takes around 700 - 750 microseconds
   udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
@@ -156,6 +152,7 @@ void update_thrust_vector()
   
   fix_roll(reference_vector, abs(YPR(ROLL)), 0, 2 * FLIGHT_THRUST);
   fix_pitch(reference_vector, abs(YPR(PITCH)), 0, 2 * FLIGHT_THRUST);
+  update_esc_power(THRUST_MATRIX);
   
   Serial << "new FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
 }
