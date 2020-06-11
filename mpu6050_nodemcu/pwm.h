@@ -19,16 +19,16 @@ void calibrate_esc()
   ESC_REAR_1.attach(REAR_PIN_1, 1000, 2000);
   ESC_REAR_2.attach(REAR_PIN_2, 1000, 2000);
   Serial.println("Sending max pulse...");
-  ESC_FRONT_1.write(180);
-  ESC_FRONT_2.write(180);
-  ESC_REAR_1.write(180);
-  ESC_REAR_2.write(180);
+  ESC_FRONT_1.write(MAX_THRUST);
+  ESC_FRONT_2.write(MAX_THRUST);
+  ESC_REAR_1.write(MAX_THRUST);
+  ESC_REAR_2.write(MAX_THRUST);
   delay(3000);
   Serial.println("Sending min pulse...");
-  ESC_FRONT_1.write(0);
-  ESC_FRONT_2.write(0);
-  ESC_REAR_1.write(0);
-  ESC_REAR_2.write(0);
+  ESC_FRONT_1.write(MIN_THRUST);
+  ESC_FRONT_2.write(MIN_THRUST);
+  ESC_REAR_1.write(MIN_THRUST);
+  ESC_REAR_2.write(MIN_THRUST);
   delay(3000);
   Serial.println("ESC calibrated (check it manually)!");
 }
@@ -37,7 +37,7 @@ void calibrate_esc()
 void update_esc_power(BLA::Matrix<4> power_matrix)
 {
   using namespace BLA;
-  Serial << "Updating the power matrix: " << power_matrix << "\n";
+//  Serial << "Updating the power matrix: " << power_matrix << "\n";
   ESC_FRONT_1.write(power_matrix(FRONTMA));
   ESC_FRONT_2.write(power_matrix(FRONTMB));
   ESC_REAR_1.write(power_matrix(REARMA));

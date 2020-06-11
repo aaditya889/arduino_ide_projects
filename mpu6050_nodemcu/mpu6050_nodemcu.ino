@@ -21,6 +21,7 @@
 #define PITCH 1
 #define YAW 2
 
+//  T = (double)Temperature/340+36.53; //temperature formula
 //  TODO: TURN THE FILTER FUNCTION INTO A BLACK BOX, AND REDUCE THE CODE IN THE LOOP() FUNCTION
 //  TODO: REDUCE GLOBAL VARIABLE COUNT AND RECTIFY THE LINTING!!
 //  TODO: TRY TO REUSE VARIABLES AND REDUCE THE AMOUNT OF MEMORY USED (TO COMPENSATE FOR THE POSSIBILITY OF CODE EXPANSION)!
@@ -36,10 +37,10 @@ WiFiUDP udp_client;
 const uint16_t AccelScaleFactor = 16384;
 const uint16_t GyroScaleFactor = 131;
 uint32_t GYRO_START_TIME, GYRO_END_TIME;
-const double ACC_WEIGHT = 0.02;
+const double ACC_WEIGHT = 0.08;
 uint8_t FLIGHT_THRUST = 60;
 
-volatile BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, ANGLE_DELTA, GYRO_ANGLES, YPR_GYRO = {0,0,0}, YPR_ACC = {0,0,0}, YPR = {0,0,0}, DES_YPR = {0,0,0};
+BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, ANGLE_DELTA, GYRO_ANGLES, YPR_GYRO = {0,0,0}, YPR_ACC = {0,0,0}, YPR = {0,0,0}, DES_YPR = {0,0,0}, YPR_DELTA;
 BLA::Matrix<4> THRUST_MATRIX;
 BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0};
 //int16_t Temperature;
@@ -94,26 +95,32 @@ void setup()
   
   MPU6050_Init();
   calibrate_esc();
-
+  calibrate_flight_thrust();
   
   GYRO_START_TIME = micros();
 }
 
 void loop()
 {
-  Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
-  
-  //divide each with their sensitivity scale factor
-//  Ax = ((double)AccelX / AccelScaleFactor) - acc_x_avg;
-//  Ay = ((double)AccelY / AccelScaleFactor) - acc_y_avg;
-//  Az = ((double)AccelZ / AccelScaleFactor) - acc_z_avg;
-//  T = (double)Temperature/340+36.53; //temperature formula
-//  Gx = ((double)GyroX / GyroScaleFactor) - gyro_x_avg;
-//  Gy = ((double)GyroY / GyroScaleFactor) - gyro_y_avg;
-//  Gz = ((double)GyroZ / GyroScaleFactor) - gyro_z_avg;
-  
-  MPU_ACC = (MPU_ACC / (double) AccelScaleFactor) - MPU_ACC_AVG + MPU_ACC_OFF;
-  MPU_GYRO = (MPU_GYRO / (double) GyroScaleFactor) - MPU_GYRO_AVG;
+  filter_and_update_thrust();
+  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
+
+  Serial << "YPR => " << YPR << " ACC => " << YPR_ACC << "\n";
+
+  send_udp((char *)mpu_data);
+}
+
+void send_udp(char *message)
+{
+  // udp send takes around 700 - 750 microseconds
+  udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
+  udp_client.write(message, strlen(message));
+  udp_client.endPacket();
+}
+
+void filter_and_update_thrust()
+{
+  Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
 
   for (int i = 0; i < MPU_ACC.GetRowCount(); i++) 
   {
@@ -121,46 +128,36 @@ void loop()
   }
 
   GYRO_END_TIME = micros();
-  GYRO_START_TIME = micros();
 
   ANGLE_DELTA = (MPU_GYRO * 4.0 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
   YPR_GYRO += ADX * (double)ANGLE_DELTA(GX) + ADY * (double)ANGLE_DELTA(GY) + ADZ * (double)ANGLE_DELTA(GZ);
-
-  YPR = YPR_ACC * (double)(ACC_WEIGHT) + YPR_GYRO * (double)(1 - ACC_WEIGHT);
-//  Serial << "[YPR] => " << YPR << " [YPR_GYRO] => " << YPR_GYRO << " [YPR_ACC] => " << YPR_ACC << "\n";
-  YPR_GYRO = YPR;
-
-  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf AX: %10lf AY: %10lf AZ: %10lf", YPR(AX), YPR(AY), YPR(AZ), MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ));
   
-  YPR = YPR - DES_YPR;
+  YPR = YPR_ACC * (double)(ACC_WEIGHT) + YPR_GYRO * (double)(1 - ACC_WEIGHT);
+  YPR_GYRO = YPR;
+  YPR_DELTA = YPR - DES_YPR;
 
   update_thrust_vector();
-
-//  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf AX: %10lf AY: %10lf AZ: %10lf", YPR(AX), YPR(AY), YPR(AZ), MPU_ACC(AX), MPU_ACC(AY), MPU_ACC(AZ));
-//  sprintf(mpu_data, "TMFA: %10lf TMFB: %10lf TMRA: %10lf TMRB: %10lf", THRUST_MATRIX(FRONTMA), THRUST_MATRIX(FRONTMB), THRUST_MATRIX(REARMA), THRUST_MATRIX(REARMB));
-  
-  // udp send takes around 700 - 750 microseconds
-  udp_client.beginPacket(REMOTE_IP, REMOTE_PORT);
-  udp_client.write((char*)mpu_data, strlen(mpu_data));
-  udp_client.endPacket();
+  GYRO_START_TIME = micros();
 }
+
 
 void update_thrust_vector()
 {
-  uint8_t roll_deviation = abs(YPR(ROLL));
-  uint8_t pitch_deviation = abs(YPR(PITCH));
+  uint8_t roll_deviation = abs(YPR_DELTA(ROLL));
+  uint8_t pitch_deviation = abs(YPR_DELTA(PITCH));
   uint8_t reference_vector[4] = {FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST};
   
-  fix_roll(reference_vector, abs(YPR(ROLL)), 0, 2 * FLIGHT_THRUST);
-  fix_pitch(reference_vector, abs(YPR(PITCH)), 0, 2 * FLIGHT_THRUST);
+  fix_roll(reference_vector, abs(YPR_DELTA(ROLL)), 0, 2 * FLIGHT_THRUST);
+  fix_pitch(reference_vector, abs(YPR_DELTA(PITCH)), 0, 2 * FLIGHT_THRUST);
+  
   update_esc_power(THRUST_MATRIX);
   
-  Serial << "new FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
+//  Serial << "new FRONT => MA: " <<  THRUST_MATRIX(FRONTMA) << " MB: " << THRUST_MATRIX(FRONTMB) << " REAR => MA: " << THRUST_MATRIX(REARMA) << " MB: " << THRUST_MATRIX(REARMB) << "\n";
 }
 
 void fix_roll (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value)
 {
-  if (YPR(ROLL) < 0)  // left tilt
+  if (YPR_DELTA(ROLL) < 0)  // left tilt
   {
     THRUST_MATRIX(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, true);
     THRUST_MATRIX(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, true);
@@ -178,7 +175,7 @@ void fix_roll (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, 
 
 void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value)
 {
-  if (YPR(PITCH) < 0)  // backward lean
+  if (YPR_DELTA(PITCH) < 0)  // backward lean
   {
     THRUST_MATRIX(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, false);
     THRUST_MATRIX(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, false);
@@ -209,7 +206,7 @@ void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data)
 }
 
 // read all 14 register
-void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
+void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress, boolean find_angles)
 {
   Wire.beginTransmission(deviceAddress);
   Wire.write(regAddress);
@@ -223,6 +220,12 @@ void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
   GyroX = MPU_GYRO(GX) = (int16_t)(((int16_t)Wire.read()<<8) | Wire.read());    //Gyro X
   GyroY = MPU_GYRO(GY) = (int16_t)(((int16_t)Wire.read()<<8) | Wire.read());    //Gyro Y
   GyroZ = MPU_GYRO(GZ) = (int16_t)(((int16_t)Wire.read()<<8) | Wire.read());    //Gyro Z
+
+  if (find_angles)
+  {
+    MPU_ACC = (MPU_ACC / (double) AccelScaleFactor) - MPU_ACC_AVG + MPU_ACC_OFF;
+    MPU_GYRO = (MPU_GYRO / (double) GyroScaleFactor) - MPU_GYRO_AVG; 
+  }
 }
 
 //configure MPU6050
@@ -246,7 +249,7 @@ void MPU6050_Init()
   
   for (int i = 0; i < avg_count; i++)
   {
-    Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
+    Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, false);
     MPU_ACC_AVG += (MPU_ACC / (double)(AccelScaleFactor));
     MPU_GYRO_AVG += (MPU_GYRO / (double)(GyroScaleFactor));       
   }
@@ -266,6 +269,46 @@ void MPU6050_Init()
 void calibrate_flight_thrust()
 {
   Serial << "Calibrating thrust...\n";
-  Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
+  boolean flight_achieved = false;
+  BLA::Matrix<4> thrust_vector;
+  FLIGHT_THRUST = 5;
+  uint8_t delta_thrust;
+  thrust_vector.Fill(FLIGHT_THRUST);
+  char udp_message[50];
+  
+  while (!flight_achieved)
+  {
+    Serial << "Trying to achieve flight at thrust = " << FLIGHT_THRUST << ", and thrust_vector = "<< thrust_vector << "...\n";
+    Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
+
+    delta_thrust = FLIGHT_THRUST / 3;
+    thrust_vector(FRONTMA) = FLIGHT_THRUST + delta_thrust;
+    thrust_vector(FRONTMB) = FLIGHT_THRUST - delta_thrust;
+    thrust_vector(REARMA) = FLIGHT_THRUST - delta_thrust;
+    thrust_vector(REARMB) = FLIGHT_THRUST + delta_thrust;
+    
+    update_esc_power(thrust_vector);
+    delay(2000);
+    
+    if (abs(MPU_GYRO(GZ)) >= 5) flight_achieved = true;
+    else FLIGHT_THRUST = (FLIGHT_THRUST + 3) % MAX_THRUST;
+
+    if (FLIGHT_THRUST >= MAX_THRUST / 2) 
+    {
+      Serial << "Unable to achieve flight, something might be wrong. Aborting...\n";
+      send_udp("Unable to achieve flight, something might be wrong. Aborting...\n");
+      
+      FLIGHT_THRUST = MIN_THRUST;
+      thrust_vector.Fill(FLIGHT_THRUST);
+      update_esc_power(thrust_vector);
+      while (true) {}
+    }
+  }
+  FLIGHT_THRUST += 1;
+  thrust_vector.Fill(FLIGHT_THRUST);
+  update_esc_power(thrust_vector);
+  Serial << "Achieved flight at thrust = " << FLIGHT_THRUST << "...\n";
+  sprintf(udp_message, "Achieved flight at thrust = %d...\n", FLIGHT_THRUST);
+  send_udp(udp_message);
   
 }

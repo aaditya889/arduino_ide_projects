@@ -13,7 +13,8 @@ const unsigned short diff_constant = 40;
 const short time_interval_secs = 10;
 const char REMOTE_IP[] = "192.168.1.15";
 const uint16_t REMOTE_PORT = 8000;
-
+const uint8_t MIN_THRUST = 180;
+const uint8_t MAX_THRUST = 180;
 
 const uint8_t INSTRUCTION_TIME_US = 15;
 // DEFINE AUDIO QUALITY
