@@ -39,7 +39,7 @@ uint32_t GYRO_START_TIME, GYRO_END_TIME;
 const double ACC_WEIGHT = 0.02;
 uint8_t FLIGHT_THRUST = 60;
 
-BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, ANGLE_DELTA, GYRO_ANGLES, YPR_GYRO = {0,0,0}, YPR_ACC = {0,0,0}, YPR = {0,0,0}, DES_YPR = {0,0,0};
+volatile BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, ANGLE_DELTA, GYRO_ANGLES, YPR_GYRO = {0,0,0}, YPR_ACC = {0,0,0}, YPR = {0,0,0}, DES_YPR = {0,0,0};
 BLA::Matrix<4> THRUST_MATRIX;
 BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0};
 //int16_t Temperature;
@@ -94,13 +94,13 @@ void setup()
   
   MPU6050_Init();
   calibrate_esc();
+
+  
+  GYRO_START_TIME = micros();
 }
 
 void loop()
 {
-//  double Ax, Ay, Az, T, Gx, Gy, Gz;
-
-  GYRO_START_TIME = micros();
   Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
   
   //divide each with their sensitivity scale factor
@@ -121,6 +121,7 @@ void loop()
   }
 
   GYRO_END_TIME = micros();
+  GYRO_START_TIME = micros();
 
   ANGLE_DELTA = (MPU_GYRO * 4.0 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
   YPR_GYRO += ADX * (double)ANGLE_DELTA(GX) + ADY * (double)ANGLE_DELTA(GY) + ADZ * (double)ANGLE_DELTA(GZ);
@@ -240,14 +241,12 @@ void MPU6050_Init()
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_USER_CTRL, 0x00);
   Serial.println("MPU6050 initialised!");
-
-  Serial.println("");
+  
   uint8_t avg_count = 500;
   
   for (int i = 0; i < avg_count; i++)
   {
     Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
-    
     MPU_ACC_AVG += (MPU_ACC / (double)(AccelScaleFactor));
     MPU_GYRO_AVG += (MPU_GYRO / (double)(GyroScaleFactor));       
   }
@@ -262,5 +261,11 @@ void MPU6050_Init()
     ESP.restart(); 
   }
   delay(400);
+}
 
+void calibrate_flight_thrust()
+{
+  Serial << "Calibrating thrust...\n";
+  Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
+  
 }
