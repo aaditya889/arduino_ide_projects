@@ -29,6 +29,14 @@
 //  MOVE SOME OF THE GLOBAL VARS TO CONSTANTS FILE
 //  REVISIT THE find_angles boolean IN READRAWVALUE CODE!
 
+//  NEXT (BEFORE FLIGHT): 
+//  SHIFT THE MPU LIBRARY TO A NEW FILE/FOLDER, THEN TEST AGAIN. 
+//  RETURN THE VALUES FROM ReadRaw INSTEAD OF SETTING THE GLOBAL VARIABLES
+//  REMOVE ALL GLOBAL VARIALBES.
+//  MOVE THE FILTER TO A TICKER FUNCTION, THEN TEST PROPERLY
+//  MOVE THE SERVER TO A NEW LIBRARY.
+//  REMOVE UNECESSARY VARIABLES.
+
 //  function definitions
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle);
 
@@ -303,7 +311,7 @@ void calibrate_flight_thrust()
 {
   Serial << "Calibrating thrust...\n";
   char udp_message[150];
-  uint8_t min_gyro_delta = 15, delta_thrust;
+  uint8_t min_gyro_delta = 10, delta_thrust, grace_thrust = 0;
   double gyro_z;
   BLA::Matrix<4> thrust_vector;
 
@@ -346,9 +354,22 @@ void calibrate_flight_thrust()
       while (true) {delay(100);}
     }
   }
-  FLIGHT_THRUST += 1;
-  thrust_vector.Fill(FLIGHT_THRUST);
+  Serial << "Increasing the thrust gracefully ...\n";
+  send_udp("Increasing the thrust gracefully ...\n");
+  delay(2000);
+  
+  grace_thrust = FLIGHT_THRUST / 2;
+  thrust_vector.Fill(grace_thrust);
   update_esc_power(thrust_vector);
+  
+  while (grace_thrust < FLIGHT_THRUST)
+  {
+    thrust_vector.Fill(grace_thrust);
+    update_esc_power(thrust_vector);
+    grace_thrust += 1;
+    delay(200);
+  }
+  
   Serial << "Achieved flight at thrust = " << FLIGHT_THRUST << "...\n";
   sprintf(udp_message, "Achieved flight at thrust = %d...\n", FLIGHT_THRUST);
   send_udp(udp_message);
