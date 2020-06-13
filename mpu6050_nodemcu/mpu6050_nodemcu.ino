@@ -51,8 +51,6 @@ BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0};
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
 double acc_x_avg = 0, acc_y_avg = 0, acc_z_avg = 0, gyro_x_avg = 0, gyro_y_avg = 0, gyro_z_avg = 0;
 
-char mpu_data[150];
-
 // MPU6050 Slave Device Address
 const uint8_t MPU6050SlaveAddress = 0x68;
 
@@ -72,6 +70,8 @@ const uint8_t MPU6050_REGISTER_FIFO_EN      =  0x23;
 const uint8_t MPU6050_REGISTER_INT_ENABLE   =  0x38;
 const uint8_t MPU6050_REGISTER_ACCEL_XOUT_H =  0x3B;
 const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
+
+//Ticker handle_server_requests;
 
 void setup() 
 {
@@ -98,20 +98,24 @@ void setup()
   
   MPU6050_Init();
   calibrate_esc();
-  calibrate_flight_thrust();
   initiate_server();
   wait_for_flight_initiation();
+  calibrate_flight_thrust();
+  
   GYRO_START_TIME = micros();
 }
 
 void loop()
 {
+  char mpu_data[150];
+  check_flight_status();
+  
   filter_and_update_thrust();
-  sprintf(mpu_data, "YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
+  sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
 
   Serial << "YPR => " << YPR << " ACC => " << YPR_ACC << "\n";
 
-  send_udp((char *)mpu_data);
+  send_udp(mpu_data);
 }
 
 void send_udp(char *message)
@@ -280,6 +284,7 @@ BLA::Matrix<3>* find_mpu_averages(uint16_t avg_count, uint8_t delay_ms)
   
   for (uint16_t i = 0; i < avg_count; i++)
   {
+    check_flight_status();
     Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
     mpu_acc_avg += MPU_ACC;
     mpu_gyro_avg += MPU_GYRO;
@@ -303,11 +308,15 @@ void calibrate_flight_thrust()
   FLIGHT_THRUST = 5;
   uint8_t delta_thrust;
   thrust_vector.Fill(FLIGHT_THRUST);
-  char udp_message[50];
+  char udp_message[150];
   
   while (!flight_achieved)
   {
+    check_flight_status(); 
     Serial << "Trying to achieve flight at thrust = " << FLIGHT_THRUST << ", and thrust_vector = "<< thrust_vector << "...\n";
+    sprintf(udp_message, "Trying to achieve flight at thrust = %d...\n", FLIGHT_THRUST);
+    send_udp(udp_message);
+    
     Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
 
     delta_thrust = FLIGHT_THRUST / 3;
@@ -329,7 +338,7 @@ void calibrate_flight_thrust()
       FLIGHT_THRUST = MIN_THRUST;
       thrust_vector.Fill(FLIGHT_THRUST);
       update_esc_power(thrust_vector);
-      while (true) {}
+      while (true) {delay(100);}
     }
   }
   FLIGHT_THRUST += 1;
@@ -345,14 +354,14 @@ void wait_for_flight_initiation()
 {
   int i = 0;
   char udp_message[100];
-  sprintf(udp_message, "Server listening on %s:%d...\n",  WiFi.localIP().toString().c_str(), SERVER_PORT);
+  sprintf(udp_message, "Server listening on %s:%d, waiting for response...\n",  WiFi.localIP().toString().c_str(), SERVER_PORT);
   
   while(!INITIATE_FLIGHT)
   {
     server.handleClient();
     delay(100);
     i++;
-    if (i == 200)
+    if (i == 50)
     {
       Serial.println(udp_message);
       send_udp(udp_message);
@@ -361,16 +370,27 @@ void wait_for_flight_initiation()
   }
 }
 
+void check_flight_status()
+{
+  server.handleClient();
+  wait_for_flight_initiation();
+}
+
 //  Server code:
 
 void initiate_server()
 {
+  char udp_message[100];
   server.on("/initiate", initiate_flight);
   server.on("/abort", abort_flight);
   server.onNotFound(api_not_found);
 
   server.begin();
+//  handle_server_requests.attach(0.2, handle_client_requests);
+  
   Serial << "Server initiated, listening on "; Serial.print(WiFi.localIP()); Serial << ":" << SERVER_PORT << "\n";
+  sprintf(udp_message, "Server initiated, listening on %s:%d...\n",  WiFi.localIP().toString().c_str(), SERVER_PORT);
+  send_udp(udp_message);
 }
 
 void initiate_flight()
@@ -384,13 +404,25 @@ void initiate_flight()
 
 void abort_flight()
 {
+  BLA::Matrix<4> thrust_vector;
   char *message = "Command received, aborting...\n";
   Serial << message;
   send_udp(message);
+        
+  FLIGHT_THRUST = MIN_THRUST;
+  thrust_vector.Fill(FLIGHT_THRUST);
+  update_esc_power(thrust_vector);
+  INITIATE_FLIGHT = false;
+  
   server.send(200, "text/plain", message);
 }
 
 void api_not_found()
 {
   server.send(404, "text/plain", "Not found");
+}
+
+void handle_client_requests()
+{
+
 }
