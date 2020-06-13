@@ -6,6 +6,7 @@
 #include "constants.h"
 #include <math.h>
 #include "pwm.h"
+#include <ESP8266WebServer.h>
 
 #define MEGA 1000000
 #define AX 0
@@ -32,13 +33,14 @@ uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uin
 
 using namespace BLA;
 WiFiUDP udp_client;
+ESP8266WebServer server(SERVER_PORT);
 
 // sensitivity scale factor respective to full scale setting provided in datasheet 
 const uint16_t AccelScaleFactor = 16384;
 const uint16_t GyroScaleFactor = 131;
 uint32_t GYRO_START_TIME, GYRO_END_TIME;
 const double ACC_WEIGHT = 0.08;
-uint8_t FLIGHT_THRUST = 60;
+uint8_t FLIGHT_THRUST = 0;
 
 BLA::Matrix<3> MPU_ACC, MPU_GYRO, MPU_ACC_AVG, MPU_GYRO_AVG, MPU_ACC_OFF, ANGLE_DELTA, GYRO_ANGLES, YPR_GYRO = {0,0,0}, YPR_ACC = {0,0,0}, YPR = {0,0,0}, DES_YPR = {0,0,0}, YPR_DELTA;
 BLA::Matrix<4> THRUST_MATRIX;
@@ -96,7 +98,8 @@ void setup()
   MPU6050_Init();
   calibrate_esc();
   calibrate_flight_thrust();
-  
+  initiate_server();
+  wait_for_flight_initiation();
   GYRO_START_TIME = micros();
 }
 
@@ -310,5 +313,59 @@ void calibrate_flight_thrust()
   Serial << "Achieved flight at thrust = " << FLIGHT_THRUST << "...\n";
   sprintf(udp_message, "Achieved flight at thrust = %d...\n", FLIGHT_THRUST);
   send_udp(udp_message);
+  delay(1000);
+}
+
+void wait_for_flight_initiation()
+{
+  int i = 0;
+  char udp_message[100];
+  sprintf(udp_message, "Server listening on %s:%d...\n",  WiFi.localIP().toString().c_str(), SERVER_PORT);
   
+  while(!INITIATE_FLIGHT)
+  {
+    server.handleClient();
+    delay(100);
+    i++;
+    if (i == 200)
+    {
+      Serial.println(udp_message);
+      send_udp(udp_message);
+      i = 0; 
+    }
+  }
+}
+
+//  Server code:
+
+void initiate_server()
+{
+  server.on("/initiate", initiate_flight);
+  server.on("/abort", abort_flight);
+  server.onNotFound(api_not_found);
+
+  server.begin();
+  Serial << "Server initiated, listening on "; Serial.print(WiFi.localIP()); Serial << ":" << SERVER_PORT << "\n";
+}
+
+void initiate_flight()
+{
+  char *message = "Command received, initiating the flight sequence...\n";
+  Serial << message;
+  send_udp(message);
+  server.send(200, "text/plain", message);
+  INITIATE_FLIGHT = true;
+}
+
+void abort_flight()
+{
+  char *message = "Command received, aborting...\n";
+  Serial << message;
+  send_udp(message);
+  server.send(200, "text/plain", message);
+}
+
+void api_not_found()
+{
+  server.send(404, "text/plain", "Not found");
 }
