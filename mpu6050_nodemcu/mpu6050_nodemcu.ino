@@ -99,7 +99,7 @@ void setup()
   MPU6050_Init();
   calibrate_esc();
   initiate_server();
-  wait_for_flight_initiation();
+  check_flight_status();
   calibrate_flight_thrust();
   
   GYRO_START_TIME = micros();
@@ -109,6 +109,7 @@ void loop()
 {
   char mpu_data[150];
   check_flight_status();
+  if (!IS_FLIGHT_ACHIEVED) calibrate_flight_thrust();
   
   filter_and_update_thrust();
   sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
@@ -266,7 +267,7 @@ void MPU6050_Init()
 
   Serial << "Got GYRO_AVG: " << MPU_GYRO_AVG << "\nGot ACC_AVG: " << MPU_ACC_AVG << "\n";
   
-  if (MPU_GYRO_AVG(GZ) > 4.0)   // TODO: Try to fix this without resetting!
+  if (MPU_GYRO_AVG(GZ) > 2.7)   // TODO: Try to fix this without resetting!
   {
     Serial << "Got incorrect average values, resetting the module...\n";
     ESP.restart(); 
@@ -274,11 +275,10 @@ void MPU6050_Init()
   delay(400);
 }
 
-BLA::Matrix<3>* find_mpu_averages(uint16_t avg_count, uint8_t delay_ms)
+BLA::Matrix<3> find_mpu_averages(uint16_t avg_count, uint8_t delay_ms, boolean is_acc)
 {
 
   BLA::Matrix<3> mpu_acc_avg, mpu_gyro_avg;
-  BLA::Matrix<3> mpu_values[2];
   mpu_acc_avg.Fill(0);
   mpu_gyro_avg.Fill(0);
   
@@ -286,38 +286,37 @@ BLA::Matrix<3>* find_mpu_averages(uint16_t avg_count, uint8_t delay_ms)
   {
     check_flight_status();
     Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
+//    Serial << "AVG:: ACC: " << MPU_ACC << " GYRO: " << MPU_GYRO << "\n";
     mpu_acc_avg += MPU_ACC;
     mpu_gyro_avg += MPU_GYRO;
     delay(delay_ms);
   }
+
+  mpu_acc_avg /= avg_count;
+  mpu_gyro_avg /= avg_count;
   
-  mpu_acc_avg /= (double)avg_count;
-  mpu_gyro_avg /= (double)avg_count;
-
-  mpu_values[0] = mpu_acc_avg;
-  mpu_values[1] = mpu_gyro_avg;
-
-  return mpu_values;
+  if (is_acc) return mpu_acc_avg;
+  return mpu_gyro_avg;
 }
 
 void calibrate_flight_thrust()
 {
   Serial << "Calibrating thrust...\n";
-  boolean flight_achieved = false;
-  BLA::Matrix<4> thrust_vector;
-  FLIGHT_THRUST = 5;
-  uint8_t delta_thrust;
-  thrust_vector.Fill(FLIGHT_THRUST);
   char udp_message[150];
+  uint8_t min_gyro_delta = 15, delta_thrust;
+  double gyro_z;
+  BLA::Matrix<4> thrust_vector;
+
+  FLIGHT_THRUST = 5;
   
-  while (!flight_achieved)
+  while (!IS_FLIGHT_ACHIEVED)
   {
-    check_flight_status(); 
+    check_flight_status();
+    thrust_vector.Fill(FLIGHT_THRUST); 
+    
     Serial << "Trying to achieve flight at thrust = " << FLIGHT_THRUST << ", and thrust_vector = "<< thrust_vector << "...\n";
     sprintf(udp_message, "Trying to achieve flight at thrust = %d...\n", FLIGHT_THRUST);
     send_udp(udp_message);
-    
-    Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
 
     delta_thrust = FLIGHT_THRUST / 3;
     thrust_vector(FRONTMA) = FLIGHT_THRUST + delta_thrust;
@@ -327,7 +326,13 @@ void calibrate_flight_thrust()
     
     update_esc_power(thrust_vector);
     
-    if (abs(find_mpu_averages(200, 10)[1](GZ)) >= 5) flight_achieved = true;
+    gyro_z = (double)find_mpu_averages(200, 10, false)(GZ);
+    Serial.print("GOT GYRO Z = "); Serial.println(gyro_z);
+    gyro_z = (double)abs(gyro_z);
+    sprintf(udp_message, "Current gyro Z delta = %lf, min needed for flight = %d...\n", gyro_z, min_gyro_delta);
+    send_udp(udp_message);
+    
+    if (gyro_z >= min_gyro_delta) IS_FLIGHT_ACHIEVED = true;
     else FLIGHT_THRUST = (FLIGHT_THRUST + 3) % MAX_THRUST;
 
     if (FLIGHT_THRUST >= MAX_THRUST / 2) 
@@ -350,11 +355,12 @@ void calibrate_flight_thrust()
   delay(1000);
 }
 
-void wait_for_flight_initiation()
+void check_flight_status()
 {
   int i = 0;
   char udp_message[100];
   sprintf(udp_message, "Server listening on %s:%d, waiting for response...\n",  WiFi.localIP().toString().c_str(), SERVER_PORT);
+  server.handleClient();
   
   while(!INITIATE_FLIGHT)
   {
@@ -368,12 +374,6 @@ void wait_for_flight_initiation()
       i = 0; 
     }
   }
-}
-
-void check_flight_status()
-{
-  server.handleClient();
-  wait_for_flight_initiation();
 }
 
 //  Server code:
@@ -398,8 +398,10 @@ void initiate_flight()
   char *message = "Command received, initiating the flight sequence...\n";
   Serial << message;
   send_udp(message);
-  server.send(200, "text/plain", message);
   INITIATE_FLIGHT = true;
+  IS_FLIGHT_ACHIEVED = false;
+  
+  server.send(200, "text/plain", message);
 }
 
 void abort_flight()

@@ -25,3 +25,4 @@ const uint8_t SAMPLE_RATE_KHZ = 16;
 const short CAPTURE_TIME_IN_MS = 20;
 boolean INITIATE_FLIGHT = false;
 float HANDLE_REQUEST_TIME = 0.2;
+boolean IS_FLIGHT_ACHIEVED = false;
