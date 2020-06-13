@@ -270,18 +270,18 @@ void MPU6050_Init()
   delay(400);
 }
 
-BLA::Matrix<3>[2] find_mpu_averages(uint16_t avg_count, uint8_t delay_ms)
+BLA::Matrix<3>* find_mpu_averages(uint16_t avg_count, uint8_t delay_ms)
 {
 
   BLA::Matrix<3> mpu_acc_avg, mpu_gyro_avg;
-  BLA::Matrix<3>[2] mpu_values;
+  BLA::Matrix<3> mpu_values[2];
   mpu_acc_avg.Fill(0);
   mpu_gyro_avg.Fill(0);
   
   for (uint16_t i = 0; i < avg_count; i++)
   {
     Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
-    mpu_acc_avg += MPU_ACC
+    mpu_acc_avg += MPU_ACC;
     mpu_gyro_avg += MPU_GYRO;
     delay(delay_ms);
   }
