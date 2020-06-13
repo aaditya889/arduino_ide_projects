@@ -27,6 +27,7 @@
 //  TODO: REDUCE GLOBAL VARIABLE COUNT AND RECTIFY THE LINTING!!
 //  TODO: TRY TO REUSE VARIABLES AND REDUCE THE AMOUNT OF MEMORY USED (TO COMPENSATE FOR THE POSSIBILITY OF CODE EXPANSION)!
 //  MOVE SOME OF THE GLOBAL VARS TO CONSTANTS FILE
+//  REVISIT THE find_angles boolean IN READRAWVALUE CODE!
 
 //  function definitions
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle);
@@ -248,9 +249,9 @@ void MPU6050_Init()
   I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_USER_CTRL, 0x00);
   Serial.println("MPU6050 initialised!");
   
-  uint8_t avg_count = 500;
+  uint16_t avg_count = 500;
   
-  for (int i = 0; i < avg_count; i++)
+  for (uint16_t i = 0; i < avg_count; i++)
   {
     Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, false);
     MPU_ACC_AVG += (MPU_ACC / (double)(AccelScaleFactor));
@@ -267,6 +268,31 @@ void MPU6050_Init()
     ESP.restart(); 
   }
   delay(400);
+}
+
+BLA::Matrix<3>[2] find_mpu_averages(uint16_t avg_count, uint8_t delay_ms)
+{
+
+  BLA::Matrix<3> mpu_acc_avg, mpu_gyro_avg;
+  BLA::Matrix<3>[2] mpu_values;
+  mpu_acc_avg.Fill(0);
+  mpu_gyro_avg.Fill(0);
+  
+  for (uint16_t i = 0; i < avg_count; i++)
+  {
+    Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H, true);
+    mpu_acc_avg += MPU_ACC
+    mpu_gyro_avg += MPU_GYRO;
+    delay(delay_ms);
+  }
+  
+  mpu_acc_avg /= (double)avg_count;
+  mpu_gyro_avg /= (double)avg_count;
+
+  mpu_values[0] = mpu_acc_avg;
+  mpu_values[1] = mpu_gyro_avg;
+
+  return mpu_values;
 }
 
 void calibrate_flight_thrust()
@@ -291,9 +317,8 @@ void calibrate_flight_thrust()
     thrust_vector(REARMB) = FLIGHT_THRUST + delta_thrust;
     
     update_esc_power(thrust_vector);
-    delay(2000);
     
-    if (abs(MPU_GYRO(GZ)) >= 5) flight_achieved = true;
+    if (abs(find_mpu_averages(200, 100)[1](GZ)) >= 5) flight_achieved = true;
     else FLIGHT_THRUST = (FLIGHT_THRUST + 3) % MAX_THRUST;
 
     if (FLIGHT_THRUST >= MAX_THRUST / 2) 
