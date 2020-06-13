@@ -318,7 +318,7 @@ void calibrate_flight_thrust()
     
     update_esc_power(thrust_vector);
     
-    if (abs(find_mpu_averages(200, 100)[1](GZ)) >= 5) flight_achieved = true;
+    if (abs(find_mpu_averages(200, 10)[1](GZ)) >= 5) flight_achieved = true;
     else FLIGHT_THRUST = (FLIGHT_THRUST + 3) % MAX_THRUST;
 
     if (FLIGHT_THRUST >= MAX_THRUST / 2) 
