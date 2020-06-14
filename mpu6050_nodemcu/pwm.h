@@ -1,7 +1,3 @@
-#include <BasicLinearAlgebra.h>
-#include "constants.h"
-#include <Servo.h>
-//#include "constants.h"
 const uint8_t FRONT_PIN_1 = D0;
 const uint8_t FRONT_PIN_2 = D1;
 const uint8_t REAR_PIN_1 = D2;

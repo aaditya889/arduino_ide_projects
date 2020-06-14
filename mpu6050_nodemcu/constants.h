@@ -47,4 +47,4 @@ const uint16_t GYRO_SCALE_FACTOR = 131;
 //  Global matrices:
 
 //  Gyro-accelerometer axis mapping
-BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0};
+BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,1};;
