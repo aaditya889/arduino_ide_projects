@@ -1,3 +1,6 @@
+#include <BasicLinearAlgebra.h>
+using namespace BLA;
+
 // MPU6050 Slave Device Address
 const uint8_t mpu_slave_address = 0x68;
 
@@ -18,6 +21,7 @@ const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
 const uint8_t scl = D6;
 const uint8_t sda = D7;
 
+extern void check_flight_status();
 
 void i2c_write(uint8_t device_address, uint8_t reg_address, uint8_t data)
 {
@@ -29,12 +33,13 @@ void i2c_write(uint8_t device_address, uint8_t reg_address, uint8_t data)
 
 
 // read all 14 register
-void read_mpu_values(BLA::Matrix *mpu_values, uint8_t device_address, uint8_t reg_address, boolean find_angles)
+void read_mpu_values(BLA::Matrix<3> *mpu_values, uint8_t device_address, uint8_t reg_address, boolean find_angles)
 {
   Wire.beginTransmission(device_address);
   Wire.write(reg_address);
   Wire.endTransmission();
   Wire.requestFrom(device_address, (uint8_t)14);
+  int16_t Temperature;
   while(!Wire.available()) {}
 
   mpu_values[0](AX) = (int16_t)(((int16_t)Wire.read()<<8) | Wire.read());    // Acc X
@@ -56,7 +61,7 @@ void read_mpu_values(BLA::Matrix *mpu_values, uint8_t device_address, uint8_t re
 //configure MPU6050
 void mpu_init()
 {
-  BLA::Matrix mpu_values[2];
+  BLA::Matrix<3> mpu_values[2];
   Serial.println("Initialising MPU6050...");
   Wire.begin(sda, scl);
   delay(200);

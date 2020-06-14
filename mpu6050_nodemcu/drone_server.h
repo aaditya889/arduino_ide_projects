@@ -1,4 +1,12 @@
+#include <BasicLinearAlgebra.h>
+#ifndef __constants_h__
+#define __constants_h__
+#endif
 
+//  Function definitions
+void initiate_flight();
+void api_not_found();
+void abort_flight();
 
 void send_udp(char *message)
 {

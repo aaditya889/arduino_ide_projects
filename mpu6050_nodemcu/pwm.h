@@ -1,3 +1,9 @@
+#include <BasicLinearAlgebra.h>
+#ifndef __constants_h__
+#define __constants_h__
+#endif
+
+
 const uint8_t FRONT_PIN_1 = D0;
 const uint8_t FRONT_PIN_2 = D1;
 const uint8_t REAR_PIN_1 = D2;

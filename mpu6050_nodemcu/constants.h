@@ -1,3 +1,7 @@
+#include <BasicLinearAlgebra.h>
+#include <ESP8266WebServer.h>
+#include <WiFiUdp.h>
+
 #define NTP_OFFSET   19800      // In seconds
 #define NTP_INTERVAL 60 * 1000    // In milliseconds
 #define SERIAL_BAUD_RATE 115200
@@ -44,7 +48,16 @@ const double ACC_WEIGHT = 0.08;
 const uint16_t ACC_SCALE_FACTOR = 16384;
 const uint16_t GYRO_SCALE_FACTOR = 131;
 
+WiFiUDP udp_client;
+ESP8266WebServer server(SERVER_PORT);
+
 //  Global matrices:
 
 //  Gyro-accelerometer axis mapping
-BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,1};;
+BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,1};
+
+// Changing global variables
+BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR, DES_YPR;
+
+uint32_t GYRO_START_TIME, GYRO_END_TIME;
+uint8_t FLIGHT_THRUST = 0;

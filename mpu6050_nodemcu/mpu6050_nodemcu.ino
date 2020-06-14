@@ -1,10 +1,9 @@
 #include <Ticker.h>
-#include <WiFiUdp.h>
 #include <wireless_operations.h>
 #include <Servo.h>
-#include <ESP8266WebServer.h>
 #include <Wire.h>
 #include <math.h>
+#include <BasicLinearAlgebra.h>
 #include <BasicLinearAlgebra.h>
 #include "constants.h"
 #include "pwm.h"
@@ -35,13 +34,6 @@
 using namespace BLA;
 
 // Global variables
-WiFiUDP udp_client;
-ESP8266WebServer server(SERVER_PORT);
-
-uint32_t GYRO_START_TIME, GYRO_END_TIME;
-uint8_t FLIGHT_THRUST = 0;
-
-BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR, DES_YPR;
 
 //Ticker handle_server_requests;
 
@@ -54,9 +46,6 @@ void setup()
   YPR_GYRO.Fill(0);
   YPR.Fill(0);
   DES_YPR.Fill(0);
-  
-  Serial << "MPU_ACC_AVG: " << MPU_ACC_AVG << "\nMPU_GYRO_AVG: " << MPU_GYRO_AVG << "\nMPU_ACC: " << MPU_ACC << "\nMPU_GYRO: " << MPU_GYRO;
-  delay(200);
   
   mpu_init();
   calibrate_esc();
@@ -76,7 +65,7 @@ void loop()
   filter_and_update_thrust();
   sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
 
-  Serial << "YPR => " << YPR << " ACC => " << YPR_ACC << "\n";
+  Serial << "YPR => " << YPR << "\n";
 
   send_udp(mpu_data);
 }
