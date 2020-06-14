@@ -7,6 +7,20 @@
 #define REARMA 2
 #define REARMB 3
 
+#define MEGA 1000000
+#define AX 0
+#define AY 1
+#define AZ 2
+#define EX 0
+#define EY 1
+#define EZ 2
+#define GX 0
+#define GY 1
+#define GZ 2
+#define ROLL 0
+#define PITCH 1
+#define YAW 2
+
 const char *ssid = "sharma";
 const char *password = "H0m$#@12345";
 uint16_t SERVER_PORT = 80;
@@ -26,3 +40,11 @@ const short CAPTURE_TIME_IN_MS = 20;
 boolean INITIATE_FLIGHT = false;
 float HANDLE_REQUEST_TIME = 0.2;
 boolean IS_FLIGHT_ACHIEVED = false;
+const double ACC_WEIGHT = 0.08;
+const uint16_t ACC_SCALE_FACTOR = 16384;
+const uint16_t GYRO_SCALE_FACTOR = 131;
+
+//  Global matrices:
+
+//  Gyro-accelerometer axis mapping
+BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0};
