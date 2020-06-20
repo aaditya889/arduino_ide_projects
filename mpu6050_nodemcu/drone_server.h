@@ -7,6 +7,7 @@
 void initiate_flight();
 void api_not_found();
 void abort_flight();
+void simulate_flight();
 
 void send_udp(char *message)
 {
@@ -23,6 +24,7 @@ void initiate_server()
   char udp_message[100];
   server.on("/initiate", initiate_flight);
   server.on("/abort", abort_flight);
+  server.on("/simulate_flight", simulate_flight);
   server.onNotFound(api_not_found);
 
   server.begin();
@@ -40,6 +42,16 @@ void initiate_flight()
   send_udp(message);
   INITIATE_FLIGHT = true;
   IS_FLIGHT_ACHIEVED = false;
+  
+  server.send(200, "text/plain", message);
+}
+
+void simulate_flight()
+{
+  char *message = "Command received, simulating flight = true...\n";
+  Serial << message;
+  send_udp(message);
+  IS_FLIGHT_ACHIEVED = true;
   
   server.send(200, "text/plain", message);
 }

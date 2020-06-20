@@ -54,10 +54,10 @@ ESP8266WebServer server(SERVER_PORT);
 //  Global matrices:
 
 //  Gyro-accelerometer axis mapping
-BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,1};
+BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,1}, DES_YPR = {0,0,0};
 
 // Changing global variables
-BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR, DES_YPR;
+BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR;
 
 uint32_t GYRO_START_TIME, GYRO_END_TIME;
 uint8_t FLIGHT_THRUST = 0;

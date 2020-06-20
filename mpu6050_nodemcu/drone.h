@@ -105,10 +105,11 @@ void calibrate_flight_thrust()
   BLA::Matrix<4> thrust_vector;
   BLA::Matrix<3> mpu_values[2];
 
-  FLIGHT_THRUST = 5;
+  FLIGHT_THRUST = 2;
   
   while (!IS_FLIGHT_ACHIEVED)
   {
+    FLIGHT_THRUST = (FLIGHT_THRUST + 3) % MAX_THRUST;  
     check_flight_status();
     thrust_vector.Fill(FLIGHT_THRUST); 
     
@@ -131,7 +132,6 @@ void calibrate_flight_thrust()
     send_udp(udp_message);
     
     if (gyro_z >= min_gyro_delta) IS_FLIGHT_ACHIEVED = true;
-    else FLIGHT_THRUST = (FLIGHT_THRUST + 3) % MAX_THRUST;
 
     if (FLIGHT_THRUST >= MAX_THRUST / 2) 
     {
@@ -170,11 +170,15 @@ void check_flight_status()
 {
   int i = 0;
   char udp_message[100];
+  BLA::Matrix<4> thrust_vector;
   sprintf(udp_message, "Server listening on %s:%d, waiting for response...\n",  WiFi.localIP().toString().c_str(), SERVER_PORT);
   server.handleClient();
   
   while(!INITIATE_FLIGHT)
   {
+    FLIGHT_THRUST = MIN_THRUST;
+    thrust_vector.Fill(FLIGHT_THRUST);
+    update_esc_power(thrust_vector);
     server.handleClient();
     delay(100);
     i++;

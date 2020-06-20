@@ -45,7 +45,6 @@ void setup()
   MPU_GYRO_AVG.Fill(0);
   YPR_GYRO.Fill(0);
   YPR.Fill(0);
-  DES_YPR.Fill(0);
   
   mpu_init();
   calibrate_esc();
@@ -60,7 +59,11 @@ void loop()
 {
   char mpu_data[150];
   check_flight_status();
-  if (!IS_FLIGHT_ACHIEVED) calibrate_flight_thrust();
+  if (!IS_FLIGHT_ACHIEVED) 
+  {
+    calibrate_flight_thrust();
+    GYRO_START_TIME = micros();
+  }
   
   filter_and_update_thrust();
   sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
