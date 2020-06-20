@@ -152,7 +152,7 @@ void calibrate_flight_thrust()
   thrust_vector.Fill(grace_thrust);
   update_esc_power(thrust_vector);
   
-  while (grace_thrust < FLIGHT_THRUST)
+  while (grace_thrust <= FLIGHT_THRUST)
   {
     thrust_vector.Fill(grace_thrust);
     update_esc_power(thrust_vector);

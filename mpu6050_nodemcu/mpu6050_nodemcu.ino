@@ -4,7 +4,6 @@
 #include <Wire.h>
 #include <math.h>
 #include <BasicLinearAlgebra.h>
-#include <BasicLinearAlgebra.h>
 #include "constants.h"
 #include "pwm.h"
 #include <mpu6050.h>

@@ -67,6 +67,7 @@ void abort_flight()
   thrust_vector.Fill(FLIGHT_THRUST);
   update_esc_power(thrust_vector);
   INITIATE_FLIGHT = false;
+  IS_FLIGHT_ACHIEVED = false;
   
   server.send(200, "text/plain", message);
 }
