@@ -46,51 +46,29 @@ void setup()
   YPR.Fill(0);
   
   mpu_init();
-  // calibrate_esc();
-  // initiate_server();
-  // check_flight_status();
-  // calibrate_flight_thrust();
-  int8_t mpu_value[1];
-  // GYRO_START_TIME = micros();
-  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
-  Serial << "Whoami: " << mpu_value[0] << "\n";
-  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
-  Serial << "Whoami: " << mpu_value[0] << "\n";
-  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
-  Serial << "Whoami: " << mpu_value[0] << "\n";
-  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
-  Serial << "Whoami: " << mpu_value[0] << "\n";
-  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
-  Serial << "Whoami: " << mpu_value[0] << "\n";
+  calibrate_esc();
+  initiate_server();
+  check_flight_status();
+  calibrate_flight_thrust();
+  GYRO_START_TIME = micros();
 }
 
-uint16_t i = 5;
-uint64_t st, en;
+
 void loop()
 {
   BLA::Matrix<3> mpu_values[2];
-  // char mpu_data[150];
-  // check_flight_status();
-  // if (!IS_FLIGHT_ACHIEVED) 
-  // {
-  //   calibrate_flight_thrust();
-  //   GYRO_START_TIME = micros();
-  // }
+   char mpu_data[150];
+   check_flight_status();
+   if (!IS_FLIGHT_ACHIEVED) 
+   {
+     calibrate_flight_thrust();
+     GYRO_START_TIME = micros();
+   }
   
-  // filter_and_update_thrust();
-  // sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
+   filter_and_update_thrust();
+   sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
 
-  // Serial << "YPR => " << YPR << "\n";
+//   Serial << "YPR => " << YPR << "\n";
 
-  // send_udp(mpu_data);
-
-  st = micros();
-  read_mpu_average_data(mpu_values, i, 1);
-  en = micros();
-
-  Serial << "Time taken: "; Serial.println((double)(en - st)/MEGA); Serial << "For i = " << i << "\n";
-  
-  Serial << "mpu_values_acc => " << mpu_values[0] << "mpu_values_gyro => " << mpu_values[1] << "\n";
-  i += 5;
-  delay(1000);
+   send_udp(mpu_data);
 }

@@ -17,7 +17,7 @@ void check_flight_status();
 void filter_and_update_thrust()
 {
   BLA::Matrix<3> mpu_values[2], ypr_acc, angle_delta, ypr_delta;
-  find_mpu_averages(mpu_values, 50, 0, false);
+  read_mpu_values(mpu_values, mpu_slave_address, MPU6050_REGISTER_ACCEL_XOUT_H, true);
 
   for (int i = 0; i < mpu_values[0].GetRowCount(); i++) 
   {
@@ -93,14 +93,14 @@ void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value,
 
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle) 
 {
-  return (throttle ? map(value, 0, 90, reference, max_val) : map(value, 90, 0, min_val, reference));
+  return (throttle ? map(value, 0, 180, reference, max_val) : map(value, 90, 0, min_val, reference));
 }
 
 void calibrate_flight_thrust()
 {
   Serial << "Calibrating thrust...\n";
   char udp_message[150];
-  uint8_t min_gyro_delta = 10, delta_thrust, grace_thrust = 0;
+  uint8_t min_gyro_delta = 5, delta_thrust, grace_thrust = 0;
   double gyro_z;
   BLA::Matrix<4> thrust_vector;
   BLA::Matrix<3> mpu_values[2];

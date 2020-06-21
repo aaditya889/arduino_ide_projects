@@ -130,7 +130,7 @@ void mpu_init()
   i2c_write(mpu_slave_address, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
   i2c_write(mpu_slave_address, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
   i2c_write(mpu_slave_address, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_CONFIG, 0x00);
+  i2c_write(mpu_slave_address, MPU6050_REGISTER_CONFIG, 0x05);
   i2c_write(mpu_slave_address, MPU6050_REGISTER_GYRO_CONFIG, 0x00);//set +/-250 degree/second full scale
   i2c_write(mpu_slave_address, MPU6050_REGISTER_ACCEL_CONFIG, 0x00);// set +/- 2g full scale
   i2c_write(mpu_slave_address, MPU6050_REGISTER_FIFO_EN, 0x00);
@@ -173,7 +173,9 @@ void find_mpu_averages(BLA::Matrix<3> *mpu_avg_values, uint16_t avg_count, uint8
     mpu_avg_values[1] += mpu_values[1];
     if (delay_ms) delay(delay_ms);
   }
-
-  mpu_avg_values[0] /= (double)avg_count;
-  mpu_avg_values[1] /= (double)avg_count;
+  if (avg_count > 1)
+  {
+    mpu_avg_values[0] /= (double)avg_count;
+    mpu_avg_values[1] /= (double)avg_count;
+  }
 }
