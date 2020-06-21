@@ -21,6 +21,7 @@ const uint8_t MPU6050_REGISTER_GYRO_XOUT_H  =  0x43;
 const uint8_t MPU6050_REGISTER_GYRO_YOUT_H  =  0x45;
 const uint8_t MPU6050_REGISTER_GYRO_ZOUT_H  =  0x47;
 const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
+const uint8_t MPU6050_REGISTER_WHOAMI = 0x75;
 
 // Select SDA and SCL pins for I2C communication 
 const uint8_t scl = D6;
