@@ -93,7 +93,7 @@ void read_mpu_register_words(int16_t * mpu_values, uint8_t register_address, uin
 
 void read_mpu_average_data(BLA::Matrix<3> *mpu_values, uint16_t accel_avg_count, uint16_t gyro_avg_count)
 {
-  uint16_t _mpu_values[3];
+  int16_t _mpu_values[3];
   mpu_values[0].Fill(0);
   mpu_values[1].Fill(0);
 

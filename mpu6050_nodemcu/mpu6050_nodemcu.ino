@@ -50,13 +50,18 @@ void setup()
   // initiate_server();
   // check_flight_status();
   // calibrate_flight_thrust();
-  uint8_t mpu_value[1];
+  int8_t mpu_value[1];
   // GYRO_START_TIME = micros();
-  Serial << "Whoami: " << read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1) << "\n";
-  Serial << "Whoami: " << read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1) << "\n";
-  Serial << "Whoami: " << read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1) << "\n";
-  Serial << "Whoami: " << read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1) << "\n";
-  Serial << "Whoami: " << read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1) << "\n";
+  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
+  Serial << "Whoami: " << mpu_value[0] << "\n";
+  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
+  Serial << "Whoami: " << mpu_value[0] << "\n";
+  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
+  Serial << "Whoami: " << mpu_value[0] << "\n";
+  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
+  Serial << "Whoami: " << mpu_value[0] << "\n";
+  read_mpu_register_bytes(mpu_value, MPU6050_REGISTER_WHOAMI, 1);
+  Serial << "Whoami: " << mpu_value[0] << "\n";
 }
 
 void loop()
