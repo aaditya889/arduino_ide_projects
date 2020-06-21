@@ -98,21 +98,18 @@ void mpu_init()
   delay(400);
 }
 
-void find_mpu_averages(BLA::Matrix<3> *mpu_avg_values, uint16_t avg_count, uint8_t delay_ms, boolean is_acc)
+void find_mpu_averages(BLA::Matrix<3> *mpu_avg_values, uint16_t avg_count, uint8_t delay_ms, boolean check_status)
 {
 
-  BLA::Matrix<3> mpu_acc_avg, mpu_gyro_avg, mpu_values[2];
-  mpu_acc_avg.Fill(0);
-  mpu_gyro_avg.Fill(0);
+  BLA::Matrix<3> mpu_values[2];
   
   for (uint16_t i = 0; i < avg_count; i++)
   {
-    check_flight_status();
+    if (check_status) check_flight_status();
     read_mpu_values(mpu_values, mpu_slave_address, MPU6050_REGISTER_ACCEL_XOUT_H, true);
-//    Serial << "AVG:: ACC: " << MPU_ACC << " GYRO: " << MPU_GYRO << "\n";
     mpu_avg_values[0] += mpu_values[0];
     mpu_avg_values[1] += mpu_values[1];
-    delay(delay_ms);
+    if (delay_ms) delay(delay_ms);
   }
 
   mpu_avg_values[0] /= (double)avg_count;

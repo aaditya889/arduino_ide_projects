@@ -17,7 +17,7 @@ void check_flight_status();
 void filter_and_update_thrust()
 {
   BLA::Matrix<3> mpu_values[2], ypr_acc, angle_delta, ypr_delta;
-  read_mpu_values(mpu_values, mpu_slave_address, MPU6050_REGISTER_ACCEL_XOUT_H, true);
+  find_mpu_averages(mpu_values, 50, 0, false);
 
   for (int i = 0; i < mpu_values[0].GetRowCount(); i++) 
   {
@@ -124,7 +124,7 @@ void calibrate_flight_thrust()
     thrust_vector(REARMB) = FLIGHT_THRUST + delta_thrust;
     
     update_esc_power(thrust_vector);
-    find_mpu_averages(mpu_values, 200, 10, false);
+    find_mpu_averages(mpu_values, 200, 10, true);
     gyro_z = mpu_values[1](GZ);
     Serial.print("GOT GYRO Z = "); Serial.println(gyro_z);
     gyro_z = (double)abs(gyro_z);
