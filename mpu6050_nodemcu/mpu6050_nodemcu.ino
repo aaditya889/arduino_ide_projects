@@ -6,7 +6,7 @@
 #include <BasicLinearAlgebra.h>
 #include "constants.h"
 #include "pwm.h"
-#include <mpu6050.h>
+#include <_mpu6050.h>
 #include "drone.h"
 #include "drone_server.h"
 
