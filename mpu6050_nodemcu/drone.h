@@ -26,7 +26,7 @@ void filter_and_update_thrust()
 
   GYRO_END_TIME = micros();
 
-  angle_delta = (mpu_values[1] * 4.0 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
+  angle_delta = (mpu_values[1] * 1.0 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
   YPR_GYRO += ADX * (double)angle_delta(GX) + ADY * (double)angle_delta(GY) + ADZ * (double)angle_delta(GZ);
   
   YPR = ypr_acc * (double)(ACC_WEIGHT) + YPR_GYRO * (double)(1 - ACC_WEIGHT);
@@ -176,6 +176,7 @@ void check_flight_status()
   
   while(!INITIATE_FLIGHT)
   {
+    IS_FLIGHT_ACHIEVED = false;
     FLIGHT_THRUST = MIN_THRUST;
     thrust_vector.Fill(FLIGHT_THRUST);
     update_esc_power(thrust_vector);

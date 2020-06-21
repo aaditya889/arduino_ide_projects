@@ -42,9 +42,9 @@ const uint8_t BIT_DEPTH = 8;      //immutable for now!
 const uint8_t SAMPLE_RATE_KHZ = 16;
 const short CAPTURE_TIME_IN_MS = 20;
 boolean INITIATE_FLIGHT = false;
-float HANDLE_REQUEST_TIME = 0.2;
+//float HANDLE_REQUEST_TIME = 0.2;
 boolean IS_FLIGHT_ACHIEVED = false;
-const double ACC_WEIGHT = 0.08;
+const double ACC_WEIGHT = 0.02;
 const uint16_t ACC_SCALE_FACTOR = 16384;
 const uint16_t GYRO_SCALE_FACTOR = 131;
 
