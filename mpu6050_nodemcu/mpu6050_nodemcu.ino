@@ -64,6 +64,8 @@ void setup()
   Serial << "Whoami: " << mpu_value[0] << "\n";
 }
 
+uint16_t i = 5;
+uint64_t st, en;
 void loop()
 {
   BLA::Matrix<3> mpu_values[2];
@@ -82,7 +84,13 @@ void loop()
 
   // send_udp(mpu_data);
 
-  read_mpu_average_data(mpu_values, 50, 2);
-  Serial << "mpu_values_acc => " << mpu_values[0] << "mpu_values_gyro => " << mpu_values[1] << "\n";
+  st = micros();
+  read_mpu_average_data(mpu_values, i, 1);
+  en = micros();
 
+  Serial << "Time taken: "; Serial.println((double)(en - st)/MEGA); Serial << "For i = " << i << "\n";
+  
+  Serial << "mpu_values_acc => " << mpu_values[0] << "mpu_values_gyro => " << mpu_values[1] << "\n";
+  i += 5;
+  delay(1000);
 }
