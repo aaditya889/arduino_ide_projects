@@ -34,7 +34,7 @@ using namespace BLA;
 
 // Global variables
 
-//Ticker handle_server_requests;
+Ticker combine_mpu_data, balance_drone;
 
 void setup() 
 {
@@ -46,6 +46,8 @@ void setup()
   YPR.Fill(0);
   
   mpu_init();
+  combine_mpu_data.attach(0.003, complementary_filter);
+  balance_drone.attach(0.005, update_thrust_vector);
   calibrate_esc();
   initiate_server();
   check_flight_status();
@@ -53,22 +55,17 @@ void setup()
   GYRO_START_TIME = micros();
 }
 
+long unsigned int st, mi, en;
 
 void loop()
 {
   BLA::Matrix<3> mpu_values[2];
    char mpu_data[150];
    check_flight_status();
-   if (!IS_FLIGHT_ACHIEVED) 
-   {
-     calibrate_flight_thrust();
-     GYRO_START_TIME = micros();
-   }
-  
-   filter_and_update_thrust();
+   if (!IS_FLIGHT_ACHIEVED) calibrate_flight_thrust();
+   
    sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
 
-//   Serial << "YPR => " << YPR << "\n";
-
+   Serial << "YPR => " << YPR << "\n";
    send_udp(mpu_data);
 }
