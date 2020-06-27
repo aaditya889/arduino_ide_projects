@@ -30,6 +30,7 @@
 const char *ssid = "aad";
 const char *password = "yoyoyoyo";
 uint16_t SERVER_PORT = 80;
+Ticker COMBINE_MPU_DATA_TICKER, BALANCE_DRONE_TICKER;
 const uint8_t COMBINE_MPU_DATA_TICKER_INTERVAL_MS = 3;
 const uint8_t BALANCE_DRONE_TICKER_INTERVAL_MS = 5;
 

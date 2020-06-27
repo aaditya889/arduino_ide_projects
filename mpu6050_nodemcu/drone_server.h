@@ -2,6 +2,9 @@
 #ifndef __constants_h__
 #define __constants_h__
 #endif
+#ifndef __drone_h__
+#define __drone_h__
+#endif
 
 //  Function definitions
 void initiate_flight();
@@ -68,6 +71,7 @@ void abort_flight()
   update_esc_power(thrust_vector);
   INITIATE_FLIGHT = false;
   IS_FLIGHT_ACHIEVED = false;
+  change_auto_balancing_status(false);
   
   server.send(200, "text/plain", message);
 }

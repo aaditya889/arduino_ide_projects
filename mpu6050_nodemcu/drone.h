@@ -6,13 +6,15 @@
 
 using namespace BLA;
 
-//  function definitions
+//  function declarations
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle);
 void update_thrust_vector();
 void fix_roll (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector);
 void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector);
 void calibrate_flight_thrust();
 void check_flight_status();
+void change_auto_balancing_status(boolean is_enabled);
+void change_mpu_filtering_status(boolean is_enabled);
 
 
 // Changes YPR, YPR_GYRO, GYRO_START_TIME, GYRO_END_TIME
@@ -41,6 +43,7 @@ void complementary_filter()
 // Changes DRONE_THRUST_VECTOR
 void update_thrust_vector()
 {
+//  Serial.println("updating...");
   BLA::Matrix<3> ypr_delta = YPR - DES_YPR;
   uint8_t roll_deviation = abs(ypr_delta(ROLL));
   uint8_t pitch_deviation = abs(ypr_delta(PITCH));
@@ -180,6 +183,7 @@ void check_flight_status()
   
   while(!INITIATE_FLIGHT)
   {
+    change_auto_balancing_status(false);
     IS_FLIGHT_ACHIEVED = false;
     FLIGHT_THRUST = MIN_THRUST;
     thrust_vector.Fill(FLIGHT_THRUST);
@@ -194,4 +198,19 @@ void check_flight_status()
       i = 0; 
     }
   }
+  change_auto_balancing_status(true);
+}
+
+
+void change_auto_balancing_status(boolean is_enabled)
+{
+  if (is_enabled) BALANCE_DRONE_TICKER.attach_ms(BALANCE_DRONE_TICKER_INTERVAL_MS, update_thrust_vector);
+  else BALANCE_DRONE_TICKER.detach();
+}
+
+
+void change_mpu_filtering_status(boolean is_enabled)
+{
+  if (is_enabled) COMBINE_MPU_DATA_TICKER.attach_ms(COMBINE_MPU_DATA_TICKER_INTERVAL_MS, complementary_filter);
+  else COMBINE_MPU_DATA_TICKER.detach();
 }
