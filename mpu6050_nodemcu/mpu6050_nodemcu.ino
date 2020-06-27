@@ -46,8 +46,8 @@ void setup()
   YPR.Fill(0);
   
   mpu_init();
-  COMBINE_MPU_DATA_TICKER.attach_ms(COMBINE_MPU_DATA_TICKER_INTERVAL, complementary_filter);
-  BALANCE_DRONE_TICKER.attach_ms(BALANCE_DRONE_TICKER_INTERVAL, update_thrust_vector);
+  COMBINE_MPU_DATA_TICKER.attach_ms(COMBINE_MPU_DATA_TICKER_INTERVAL_MS, complementary_filter);
+  BALANCE_DRONE_TICKER.attach_ms(BALANCE_DRONE_TICKER_INTERVAL_MS, update_thrust_vector);
   calibrate_esc();
   initiate_server();
   check_flight_status();
