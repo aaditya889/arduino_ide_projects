@@ -32,7 +32,7 @@ const char *password = "yoyoyoyo";
 uint16_t SERVER_PORT = 80;
 Ticker COMBINE_MPU_DATA_TICKER, BALANCE_DRONE_TICKER;
 const uint8_t COMBINE_MPU_DATA_TICKER_INTERVAL_MS = 3;
-const uint8_t BALANCE_DRONE_TICKER_INTERVAL_MS = 5;
+const uint8_t BALANCE_DRONE_TICKER_INTERVAL_MS = 3;
 
 const unsigned short diff_constant = 40;
 const short time_interval_secs = 10;
@@ -63,7 +63,7 @@ BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,
 
 // Changing global variables
 BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR;
-BLA::Matrix<4> DRONE_THRUST_VECTOR;
+BLA::Matrix<4> DRONE_THRUST_VECTOR = {0,0,0,0};
 
 uint32_t GYRO_START_TIME = 0, GYRO_END_TIME = 0;
 uint8_t FLIGHT_THRUST = 0;

@@ -66,12 +66,9 @@ void abort_flight()
   Serial << message;
   send_udp(message);
         
-  FLIGHT_THRUST = MIN_THRUST;
-  thrust_vector.Fill(FLIGHT_THRUST);
-  update_esc_power(thrust_vector);
+  change_flight_thrust(MIN_THRUST);
   INITIATE_FLIGHT = false;
   IS_FLIGHT_ACHIEVED = false;
-  change_auto_balancing_status(false);
   
   server.send(200, "text/plain", message);
 }

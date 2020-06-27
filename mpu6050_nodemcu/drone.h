@@ -9,10 +9,11 @@ using namespace BLA;
 //  function declarations
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle);
 void update_thrust_vector();
-void fix_roll (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector);
-void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector);
+void fix_roll (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector);
+void fix_pitch (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector);
 void calibrate_flight_thrust();
 void check_flight_status();
+void change_flight_thrust(uint8_t flight_thrust);
 void change_auto_balancing_status(boolean is_enabled);
 void change_mpu_filtering_status(boolean is_enabled);
 
@@ -47,7 +48,7 @@ void update_thrust_vector()
   BLA::Matrix<3> ypr_delta = YPR - DES_YPR;
   uint8_t roll_deviation = abs(ypr_delta(ROLL));
   uint8_t pitch_deviation = abs(ypr_delta(PITCH));
-  uint8_t reference_vector[4] = {FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST};
+  BLA::Matrix<4> reference_vector = DRONE_THRUST_VECTOR;
   BLA::Matrix<4> thrust_vector;
   
   boolean left_tilt = (ypr_delta(ROLL) < 0);
@@ -58,24 +59,23 @@ void update_thrust_vector()
   
   update_esc_power(thrust_vector);
   DRONE_THRUST_VECTOR = thrust_vector;
-  
 }
 
 void fix_roll (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector)
 {
   if (left_tilt)  // left tilt
   {
-//    (*thrust_vector)(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, true);
-//    (*thrust_vector)(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, true);
-    (*thrust_vector)(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, false);
-    (*thrust_vector)(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, false);
+//    (*thrust_vector)(FRONTMA) = reference_vector(FRONTMA) = get_mapped_thrust(reference_vector(FRONTMA), deviation, min_value, max_value, true);
+//    (*thrust_vector)(REARMA) = reference_vector(REARMA) = get_mapped_thrust(reference_vector(REARMA), deviation, min_value, max_value, true);
+    (*thrust_vector)(FRONTMB) = reference_vector(FRONTMB) = get_mapped_thrust(reference_vector(FRONTMB), deviation, min_value, max_value, false);
+    (*thrust_vector)(REARMB) = reference_vector(REARMB) = get_mapped_thrust(reference_vector(REARMB), deviation, min_value, max_value, false);
   }
   else    // right tilt
   {
-    (*thrust_vector)(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, false);
-    (*thrust_vector)(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, false);
-//    (*thrust_vector)(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, true);
-//    (*thrust_vector)(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, true);
+    (*thrust_vector)(FRONTMA) = reference_vector(FRONTMA) = get_mapped_thrust(reference_vector(FRONTMA), deviation, min_value, max_value, false);
+    (*thrust_vector)(REARMA) = reference_vector(REARMA) = get_mapped_thrust(reference_vector(REARMA), deviation, min_value, max_value, false);
+//    (*thrust_vector)(FRONTMB) = reference_vector(FRONTMB) = get_mapped_thrust(reference_vector(FRONTMB), deviation, min_value, max_value, true);
+//    (*thrust_vector)(REARMB) = reference_vector(REARMB) = get_mapped_thrust(reference_vector(REARMB), deviation, min_value, max_value, true);
   }
 }
 
@@ -83,17 +83,17 @@ void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value,
 {
   if (backward_lean)  // backward lean
   {
-    (*thrust_vector)(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, false);
-    (*thrust_vector)(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, false);
-//    (*thrust_vector)(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, true);
-//    (*thrust_vector)(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, true);
+    (*thrust_vector)(FRONTMA) = reference_vector(FRONTMA) = get_mapped_thrust(reference_vector(FRONTMA), deviation, min_value, max_value, false);
+    (*thrust_vector)(FRONTMB) = reference_vector(FRONTMB) = get_mapped_thrust(reference_vector(FRONTMB), deviation, min_value, max_value, false);
+//    (*thrust_vector)(REARMA) = reference_vector(REARMA) = get_mapped_thrust(reference_vector(REARMA), deviation, min_value, max_value, true);
+//    (*thrust_vector)(REARMB) = reference_vector(REARMB) = get_mapped_thrust(reference_vector(REARMB), deviation, min_value, max_value, true);
   }
   else    // forward lean
   {
-//    (*thrust_vector)(FRONTMA) = reference_vector[FRONTMA] = get_mapped_thrust(reference_vector[FRONTMA], deviation, min_value, max_value, true);
-//    (*thrust_vector)(FRONTMB) = reference_vector[FRONTMB] = get_mapped_thrust(reference_vector[FRONTMB], deviation, min_value, max_value, true);
-    (*thrust_vector)(REARMA) = reference_vector[REARMA] = get_mapped_thrust(reference_vector[REARMA], deviation, min_value, max_value, false);
-    (*thrust_vector)(REARMB) = reference_vector[REARMB] = get_mapped_thrust(reference_vector[REARMB], deviation, min_value, max_value, false);
+//    (*thrust_vector)(FRONTMA) = reference_vector(FRONTMA) = get_mapped_thrust(reference_vector(FRONTMA), deviation, min_value, max_value, true);
+//    (*thrust_vector)(FRONTMB) = reference_vector(FRONTMB) = get_mapped_thrust(reference_vector(FRONTMB), deviation, min_value, max_value, true);
+    (*thrust_vector)(REARMA) = reference_vector(REARMA) = get_mapped_thrust(reference_vector(REARMA), deviation, min_value, max_value, false);
+    (*thrust_vector)(REARMB) = reference_vector(REARMB) = get_mapped_thrust(reference_vector(REARMB), deviation, min_value, max_value, false);
   }
 }
 
@@ -106,31 +106,30 @@ void calibrate_flight_thrust()
 {
   Serial << "Calibrating thrust...\n";
   char udp_message[150];
-  uint8_t min_gyro_delta = 5, delta_thrust, grace_thrust = 0;
+  uint8_t min_gyro_delta = 5, delta_thrust, grace_thrust = 0, flight_thrust;
   double gyro_z;
   BLA::Matrix<4> thrust_vector;
   BLA::Matrix<3> mpu_values[2];
 
-  FLIGHT_THRUST = 2;
+  flight_thrust = 2;
   
   while (!IS_FLIGHT_ACHIEVED)
   {
-    FLIGHT_THRUST = (FLIGHT_THRUST + 3) % MAX_THRUST;  
+    flight_thrust = (flight_thrust + 3) % MAX_THRUST;  
     check_flight_status();
-    thrust_vector.Fill(FLIGHT_THRUST); 
+    change_flight_thrust(flight_thrust);
     
-    Serial << "Trying to achieve flight at thrust = " << FLIGHT_THRUST << ", and thrust_vector = "<< thrust_vector << "...\n";
-    sprintf(udp_message, "Trying to achieve flight at thrust = %d...\n", FLIGHT_THRUST);
+    Serial << "Trying to achieve flight at thrust = " << flight_thrust << "...\n";
+    sprintf(udp_message, "Trying to achieve flight at thrust = %d...\n", flight_thrust);
     send_udp(udp_message);
 
-    delta_thrust = FLIGHT_THRUST / 3;
-    thrust_vector.Fill(FLIGHT_THRUST);
-//    thrust_vector(FRONTMA) = FLIGHT_THRUST + delta_thrust;
-//    thrust_vector(FRONTMB) = FLIGHT_THRUST - delta_thrust;
-//    thrust_vector(REARMA) = FLIGHT_THRUST - delta_thrust;
-//    thrust_vector(REARMB) = FLIGHT_THRUST + delta_thrust;
+    delta_thrust = flight_thrust / 3;
+    // thrust_vector.Fill(flight_thrust);
+//    thrust_vector(FRONTMA) = flight_thrust + delta_thrust;
+//    thrust_vector(FRONTMB) = flight_thrust - delta_thrust;
+//    thrust_vector(REARMA) = flight_thrust - delta_thrust;
+//    thrust_vector(REARMB) = flight_thrust + delta_thrust;
     
-    update_esc_power(thrust_vector);
     find_mpu_averages(mpu_values, 200, 10, true);
     gyro_z = mpu_values[1](GZ);
     Serial.print("GOT GYRO Z = "); Serial.println(gyro_z);
@@ -140,37 +139,32 @@ void calibrate_flight_thrust()
     
 //    if (gyro_z >= min_gyro_delta) IS_FLIGHT_ACHIEVED = true;
 
-    if (FLIGHT_THRUST >= MAX_THRUST / 2) 
+    if (flight_thrust >= MAX_THRUST / 2) 
     {
       Serial << "Unable to achieve flight, something might be wrong. Aborting...\n";
       send_udp("Unable to achieve flight, something might be wrong. Aborting...\n");
       
-      FLIGHT_THRUST = MIN_THRUST;
-      thrust_vector.Fill(FLIGHT_THRUST);
-      update_esc_power(thrust_vector);
+      change_flight_thrust(MIN_THRUST);
       while (true) {delay(100);}
     }
   }
-  Serial << "Increasing the thrust gracefully ...\n";
-  send_udp("Increasing the thrust gracefully ...\n");
-  delay(2000);
+  // Serial << "Increasing the thrust gracefully ...\n";
+  // send_udp("Increasing the thrust gracefully ...\n");
+  // delay(2000);
   
-  grace_thrust = FLIGHT_THRUST / 2;
-  thrust_vector.Fill(grace_thrust);
-  update_esc_power(thrust_vector);
+  // grace_thrust = flight_thrust / 2;
+  // change_flight_thrust(grace_thrust);
   
-  while (grace_thrust <= FLIGHT_THRUST)
-  {
-    thrust_vector.Fill(grace_thrust);
-    update_esc_power(thrust_vector);
-    grace_thrust += 1;
-    delay(200);
-  }
+  // while (grace_thrust <= flight_thrust)
+  // {
+  //   change_flight_thrust(grace_thrust);
+  //   grace_thrust += 1;
+  //   delay(200);
+  // }
   
-  Serial << "Achieved flight at thrust = " << FLIGHT_THRUST << "...\n";
-  sprintf(udp_message, "Achieved flight at thrust = %d...\n", FLIGHT_THRUST);
+  Serial << "Achieved flight at thrust = " << flight_thrust << "...\n";
+  sprintf(udp_message, "Achieved flight at thrust = %d...\n", flight_thrust);
   send_udp(udp_message);
-  delay(1000);
 }
 
 void check_flight_status()
@@ -183,11 +177,8 @@ void check_flight_status()
   
   while(!INITIATE_FLIGHT)
   {
-    change_auto_balancing_status(false);
     IS_FLIGHT_ACHIEVED = false;
-    FLIGHT_THRUST = MIN_THRUST;
-    thrust_vector.Fill(FLIGHT_THRUST);
-    update_esc_power(thrust_vector);
+    change_flight_thrust(MIN_THRUST);
     server.handleClient();
     delay(100);
     i++;
@@ -198,7 +189,13 @@ void check_flight_status()
       i = 0; 
     }
   }
-  change_auto_balancing_status(true);
+}
+
+
+void change_flight_thrust(uint8_t flight_thrust)
+{
+  FLIGHT_THRUST = flight_thrust;
+  DRONE_THRUST_VECTOR.Fill(flight_thrust);
 }
 
 

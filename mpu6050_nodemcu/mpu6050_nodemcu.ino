@@ -45,16 +45,16 @@ void setup()
   YPR.Fill(0);
 
   mpu_init();
-  change_mpu_filtering_status(true);  
-  change_auto_balancing_status(false);  
   calibrate_esc();
   initiate_server();
+  change_flight_thrust(MIN_THRUST);
+  change_mpu_filtering_status(true);
+  change_auto_balancing_status(true);
   check_flight_status();
   calibrate_flight_thrust();
   GYRO_START_TIME = micros();
 }
 
-long unsigned int st, mi, en;
 
 void loop()
 {
