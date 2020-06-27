@@ -2,7 +2,7 @@
 using namespace BLA;
 
 // MPU6050 Slave Device Address
-const uint8_t mpu_slave_address = 0x68;
+const uint8_t MPU6050_SLAVE_ADDRESS = 0x68;
 
 // MPU6050 few configuration register addresses
 const uint8_t MPU6050_REGISTER_SMPLRT_DIV   =  0x19;
@@ -67,10 +67,10 @@ void read_mpu_register_bytes(int8_t * mpu_values, uint8_t register_address, uint
 {
   uint8_t register_count = 0;
 
-  Wire.beginTransmission(mpu_slave_address);
+  Wire.beginTransmission(MPU6050_SLAVE_ADDRESS);
   Wire.write(register_address);
   Wire.endTransmission();
-  Wire.requestFrom(mpu_slave_address, (uint8_t)n_bytes);
+  Wire.requestFrom(MPU6050_SLAVE_ADDRESS, (uint8_t)n_bytes);
 
   while (Wire.available()) mpu_values[register_count++] = (int8_t)(Wire.read());
 }
@@ -79,10 +79,10 @@ void read_mpu_register_words(int16_t * mpu_values, uint8_t register_address, uin
 {
   uint8_t register_count = 0;
 
-  Wire.beginTransmission(mpu_slave_address);
+  Wire.beginTransmission(MPU6050_SLAVE_ADDRESS);
   Wire.write(register_address);
   Wire.endTransmission();
-  Wire.requestFrom(mpu_slave_address, (uint8_t)n_words * 2);
+  Wire.requestFrom(MPU6050_SLAVE_ADDRESS, (uint8_t)n_words * 2);
 
   while (Wire.available())
   {
@@ -127,23 +127,23 @@ void mpu_init()
   Serial.println("Initialising MPU6050...");
   Wire.begin(sda, scl);
   delay(200);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_CONFIG, 0x05);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_GYRO_CONFIG, 0x00);//set +/-250 degree/second full scale
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_ACCEL_CONFIG, 0x00);// set +/- 2g full scale
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_FIFO_EN, 0x00);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_INT_ENABLE, 0x01);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
-  i2c_write(mpu_slave_address, MPU6050_REGISTER_USER_CTRL, 0x00);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_CONFIG, 0x05);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_GYRO_CONFIG, 0x00);//set +/-250 degree/second full scale
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_CONFIG, 0x00);// set +/- 2g full scale
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_FIFO_EN, 0x00);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_INT_ENABLE, 0x01);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
+  i2c_write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_USER_CTRL, 0x00);
   Serial.println("MPU6050 initialised!");
   
   uint16_t avg_count = 500;
   
   for (uint16_t i = 0; i < avg_count; i++)
   {
-    read_mpu_values(mpu_values, mpu_slave_address, MPU6050_REGISTER_ACCEL_XOUT_H, false);
+    read_mpu_values(mpu_values, MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_XOUT_H, false);
     MPU_ACC_AVG += (mpu_values[0] / (double)(ACC_SCALE_FACTOR));
     MPU_GYRO_AVG += (mpu_values[1] / (double)(GYRO_SCALE_FACTOR));       
   }
@@ -168,7 +168,7 @@ void find_mpu_averages(BLA::Matrix<3> *mpu_avg_values, uint16_t avg_count, uint8
   for (uint16_t i = 0; i < avg_count; i++)
   {
     if (check_status) check_flight_status();
-    read_mpu_values(mpu_values, mpu_slave_address, MPU6050_REGISTER_ACCEL_XOUT_H, true);
+    read_mpu_values(mpu_values, MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_XOUT_H, true);
     mpu_avg_values[0] += mpu_values[0];
     mpu_avg_values[1] += mpu_values[1];
     if (delay_ms) delay(delay_ms);

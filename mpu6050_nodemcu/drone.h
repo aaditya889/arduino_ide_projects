@@ -14,10 +14,13 @@ void fix_pitch (uint8_t *reference_vector, uint8_t deviation, uint8_t min_value,
 void calibrate_flight_thrust();
 void check_flight_status();
 
+
+// Changes YPR, YPR_GYRO, GYRO_START_TIME, GYRO_END_TIME
 void complementary_filter()
 {
   BLA::Matrix<3> mpu_values[2], ypr_acc, angle_delta, ypr_delta;
-  read_mpu_values(mpu_values, mpu_slave_address, MPU6050_REGISTER_ACCEL_XOUT_H, true);
+
+  read_mpu_values(mpu_values, MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_XOUT_H, true);
 
   for (int i = 0; i < mpu_values[0].GetRowCount(); i++) 
   {
@@ -35,6 +38,7 @@ void complementary_filter()
 }
 
 
+// Changes DRONE_THRUST_VECTOR
 void update_thrust_vector()
 {
   BLA::Matrix<3> ypr_delta = YPR - DES_YPR;
@@ -50,6 +54,7 @@ void update_thrust_vector()
   fix_pitch(reference_vector, abs(ypr_delta(PITCH)), 0, 2 * FLIGHT_THRUST, backward_lean, &thrust_vector);
   
   update_esc_power(thrust_vector);
+  DRONE_THRUST_VECTOR = thrust_vector;
   
 }
 

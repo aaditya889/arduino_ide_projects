@@ -34,7 +34,7 @@ using namespace BLA;
 
 // Global variables
 
-Ticker combine_mpu_data, balance_drone;
+Ticker COMBINE_MPU_DATA_TICKER, BALANCE_DRONE_TICKER;
 
 void setup() 
 {
@@ -46,8 +46,8 @@ void setup()
   YPR.Fill(0);
   
   mpu_init();
-  combine_mpu_data.attach(0.003, complementary_filter);
-  balance_drone.attach(0.005, update_thrust_vector);
+  COMBINE_MPU_DATA_TICKER.attach_ms(COMBINE_MPU_DATA_TICKER_INTERVAL, complementary_filter);
+  BALANCE_DRONE_TICKER.attach_ms(BALANCE_DRONE_TICKER_INTERVAL, update_thrust_vector);
   calibrate_esc();
   initiate_server();
   check_flight_status();
