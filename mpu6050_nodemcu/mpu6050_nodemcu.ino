@@ -49,7 +49,7 @@ void setup()
   mpu_init();
   calibrate_esc();
   initiate_server();
-  change_flight_thrust(MIN_THRUST);
+  change_flight_thrust(MIN_PULSE);
   change_mpu_filtering_status(true);
   change_auto_balancing_status(true);
   check_flight_status();

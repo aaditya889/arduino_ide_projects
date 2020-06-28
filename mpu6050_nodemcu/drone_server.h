@@ -66,7 +66,7 @@ void abort_flight()
   Serial << message;
   send_udp(message);
         
-  change_flight_thrust(MIN_THRUST);
+  change_flight_thrust(MIN_PULSE);
   INITIATE_FLIGHT = false;
   IS_FLIGHT_ACHIEVED = false;
   

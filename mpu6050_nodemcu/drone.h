@@ -56,8 +56,8 @@ void update_thrust_vector()
   boolean left_tilt = (ypr_delta(ROLL) < 0);
   boolean backward_lean = (ypr_delta(PITCH) < 0);
 
-  fix_roll(&reference_vector, abs(ypr_delta(ROLL)), MIN_THRUST, 2 * FLIGHT_THRUST, left_tilt, &thrust_vector);
-  fix_pitch(&reference_vector, abs(ypr_delta(PITCH)), MIN_THRUST, 2 * FLIGHT_THRUST, backward_lean, &thrust_vector);
+  fix_roll(&reference_vector, abs(ypr_delta(ROLL)), MIN_PULSE, 2 * FLIGHT_THRUST, left_tilt, &thrust_vector);
+  fix_pitch(&reference_vector, abs(ypr_delta(PITCH)), MIN_PULSE, 2 * FLIGHT_THRUST, backward_lean, &thrust_vector);
 
 //  Serial << " Got thrust vector: " << thrust_vector;
 //  Serial << "Roll deviation: " << roll_deviation << " pitch dev: " << pitch_deviation << "\n";
@@ -123,7 +123,7 @@ void calibrate_flight_thrust()
   
   while (!IS_FLIGHT_ACHIEVED)
   {
-    flight_thrust = (FLIGHT_THRUST + 3) % MAX_THRUST;  
+    flight_thrust = (FLIGHT_THRUST + 3) % MAX_PULSE;  
     check_flight_status();
     change_flight_thrust(flight_thrust);
     
@@ -147,12 +147,12 @@ void calibrate_flight_thrust()
     
 //    if (gyro_z >= min_gyro_delta) IS_FLIGHT_ACHIEVED = true;
 
-    if (flight_thrust >= MAX_THRUST / 2) 
+    if (flight_thrust >= MAX_PULSE / 2) 
     {
       Serial << "Unable to achieve flight, something might be wrong. Aborting...\n";
       send_udp("Unable to achieve flight, something might be wrong. Aborting...\n");
       
-      change_flight_thrust(MIN_THRUST);
+      change_flight_thrust(MIN_PULSE);
       while (true) {delay(100);}
     }
   }
@@ -186,7 +186,7 @@ void check_flight_status()
   while(!INITIATE_FLIGHT)
   {
     IS_FLIGHT_ACHIEVED = false;
-    change_flight_thrust(MIN_THRUST);
+    change_flight_thrust(MIN_PULSE);
     server.handleClient();
     delay(100);
     i++;

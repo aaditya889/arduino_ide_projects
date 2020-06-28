@@ -36,8 +36,8 @@ const uint8_t BALANCE_DRONE_TICKER_INTERVAL_MS = 3;
 
 const char REMOTE_IP[] = "192.168.43.13";
 const uint16_t REMOTE_PORT = 8000;
-const uint8_t MIN_THRUST = 0;
-const uint8_t MAX_THRUST = 180;
+const uint8_t MIN_PULSE = 0;
+const uint8_t MAX_PULSE = 180;
 
 boolean INITIATE_FLIGHT = false;
 boolean IS_FLIGHT_ACHIEVED = false;
