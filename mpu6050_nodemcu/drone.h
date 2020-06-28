@@ -11,6 +11,8 @@ uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uin
 void update_thrust_vector();
 void fix_roll (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector);
 void fix_pitch (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector);
+void change_drone_thrust_vector();
+void recalibrate_thrust_vector(BLA::Matrix<4> *thrust_vector, uint8_t current_flight_thrust);
 void calibrate_flight_thrust();
 void check_flight_status();
 void change_flight_thrust(uint8_t flight_thrust);
@@ -36,7 +38,7 @@ void complementary_filter()
   YPR_GYRO += ADX * (double)angle_delta(GX) + ADY * (double)angle_delta(GY) + ADZ * (double)angle_delta(GZ);
   
   YPR = ypr_acc * (double)(ACC_WEIGHT) + YPR_GYRO * (double)(1 - ACC_WEIGHT);
-//  YPR_GYRO = YPR;
+  YPR_GYRO = YPR;
   GYRO_START_TIME = micros();
 }
 
@@ -47,20 +49,35 @@ void update_thrust_vector()
 //  long unsigned int st,en;
 //  st=micros();
 //  Serial.println("updating...");
-  BLA::Matrix<3> ypr_delta = YPR - DES_YPR;
-  uint8_t roll_deviation = abs(ypr_delta(ROLL));
-  uint8_t pitch_deviation = abs(ypr_delta(PITCH));
-  BLA::Matrix<4> reference_vector = DRONE_THRUST_VECTOR, thrust_vector = DRONE_THRUST_VECTOR;
 
-//  Serial << " Got reference vector: " << reference_vector;
-  boolean left_tilt = (ypr_delta(ROLL) < 0);
-  boolean backward_lean = (ypr_delta(PITCH) < 0);
+  // Declarations
+  BLA::Matrix<4> reference_vector, thrust_vector;
+  BLA::Matrix<3> ypr_delta;
+  uint8_t roll_deviation;
+  uint8_t pitch_deviation, current_flight_thrust;
+  boolean left_tilt;
+  boolean backward_lean;
+
+  change_drone_thrust_vector();
+  
+//  Assignments
+  reference_vector = thrust_vector = DRONE_THRUST_VECTOR;
+  ypr_delta = YPR - DES_YPR; 
+  roll_deviation = abs(ypr_delta(ROLL));
+  pitch_deviation = abs(ypr_delta(PITCH));
+  current_flight_thrust = FLIGHT_THRUST;
+  left_tilt = (ypr_delta(ROLL) < 0);
+  backward_lean = (ypr_delta(PITCH) < 0);
+  
 
   fix_roll(&reference_vector, abs(ypr_delta(ROLL)), MIN_PULSE, 2 * FLIGHT_THRUST, left_tilt, &thrust_vector);
   fix_pitch(&reference_vector, abs(ypr_delta(PITCH)), MIN_PULSE, 2 * FLIGHT_THRUST, backward_lean, &thrust_vector);
 
 //  Serial << " Got thrust vector: " << thrust_vector;
 //  Serial << "Roll deviation: " << roll_deviation << " pitch dev: " << pitch_deviation << "\n";
+  
+  recalibrate_thrust_vector(&thrust_vector, current_flight_thrust);
+  
   update_esc_power(thrust_vector);
   DRONE_THRUST_VECTOR = thrust_vector;
 //  Serial.println("ending...");
@@ -105,10 +122,35 @@ void fix_pitch (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min
   }
 }
 
+
+void change_drone_thrust_vector()
+{
+  if(FLIGHT_THRUST_DIFF == 0) return;
+
+  for (uint8_t i = 0; i < DRONE_THRUST_VECTOR.GetRowCount(); i++)
+  {
+    int value = DRONE_THRUST_VECTOR(i) + FLIGHT_THRUST_DIFF;
+    DRONE_THRUST_VECTOR(i) = (value <= 0) ? 0 : value;
+  }
+  FLIGHT_THRUST += FLIGHT_THRUST_DIFF;
+  FLIGHT_THRUST_DIFF = 0;
+}
+
+
+void recalibrate_thrust_vector(BLA::Matrix<4> *thrust_vector, uint8_t current_flight_thrust)
+{
+  double diff = MAX_PULSE;
+  for(uint8_t i = 0; i < (*thrust_vector).GetRowCount(); i++) diff = (double)min(diff, ((double)current_flight_thrust - (*thrust_vector)(i)));
+//  Serial.print("GOT DIFF: "); Serial.println(diff);
+  (*thrust_vector) += (BLA::Matrix<4>) {diff, diff, diff, diff};
+}
+
+
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle) 
 {
   return (throttle ? map(value, 0, 180, reference, max_val) : map(value, 180, 0, min_val, reference));
 }
+
 
 void calibrate_flight_thrust()
 {
@@ -202,8 +244,7 @@ void check_flight_status()
 
 void change_flight_thrust(uint8_t flight_thrust)
 {
-  FLIGHT_THRUST = flight_thrust;
-  DRONE_THRUST_VECTOR.Fill(flight_thrust);
+  FLIGHT_THRUST_DIFF = flight_thrust - FLIGHT_THRUST;
 }
 
 
