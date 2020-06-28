@@ -48,6 +48,7 @@ void calibrate_esc()
 
 void update_esc_power(BLA::Matrix<4> power_matrix)
 {
+  using namespace BLA;
 //  Serial << "Updating the power matrix: " << power_matrix << "\n";
   ESC_FRONT_1.write((uint8_t)power_matrix(FRONTMA));
   ESC_FRONT_2.write((uint8_t)power_matrix(FRONTMB));

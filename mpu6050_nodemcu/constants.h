@@ -34,20 +34,12 @@ Ticker COMBINE_MPU_DATA_TICKER, BALANCE_DRONE_TICKER;
 const uint8_t COMBINE_MPU_DATA_TICKER_INTERVAL_MS = 3;
 const uint8_t BALANCE_DRONE_TICKER_INTERVAL_MS = 3;
 
-const unsigned short diff_constant = 40;
-const short time_interval_secs = 10;
 const char REMOTE_IP[] = "192.168.43.13";
 const uint16_t REMOTE_PORT = 8000;
 const uint8_t MIN_THRUST = 0;
 const uint8_t MAX_THRUST = 180;
 
-const uint8_t INSTRUCTION_TIME_US = 15;
-// DEFINE AUDIO QUALITY
-const uint8_t BIT_DEPTH = 8;      //immutable for now!
-const uint8_t SAMPLE_RATE_KHZ = 16;
-const short CAPTURE_TIME_IN_MS = 20;
 boolean INITIATE_FLIGHT = false;
-//float HANDLE_REQUEST_TIME = 0.2;
 boolean IS_FLIGHT_ACHIEVED = false;
 const double ACC_WEIGHT = 0.02;
 const uint16_t ACC_SCALE_FACTOR = 16384;
@@ -63,7 +55,7 @@ BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,
 
 // Changing global variables
 BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR;
-BLA::Matrix<4> DRONE_THRUST_VECTOR = {0,0,0,0};
+BLA::Matrix<4> DRONE_THRUST_VECTOR;
 
 uint32_t GYRO_START_TIME = 0, GYRO_END_TIME = 0;
 uint8_t FLIGHT_THRUST = 0;

@@ -26,6 +26,7 @@
 //  MOVE THE FILTER TO A TICKER FUNCTION, THEN TEST PROPERLY
 //  MOVE THE SERVER TO A NEW LIBRARY.
 //  REMOVE UNECESSARY VARIABLES.
+//  CHANGE MIN AND MAX_THRUST TO PULSE
 
 //  function definitions
 // uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle);
@@ -43,6 +44,7 @@ void setup()
   MPU_GYRO_AVG.Fill(0);
   YPR_GYRO.Fill(0);
   YPR.Fill(0);
+  DRONE_THRUST_VECTOR.Fill(0);
 
   mpu_init();
   calibrate_esc();
