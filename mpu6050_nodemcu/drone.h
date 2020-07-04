@@ -9,8 +9,8 @@ using namespace BLA;
 //  function declarations
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle);
 void update_thrust_vector();
-void fix_roll (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector);
-void fix_pitch (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector);
+void fix_roll (uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector);
+void fix_pitch (uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector);
 void change_drone_thrust_vector();
 void recalibrate_thrust_vector(BLA::Matrix<4> *thrust_vector, uint8_t current_flight_thrust);
 void calibrate_flight_thrust();
@@ -51,7 +51,7 @@ void update_thrust_vector()
 //  Serial.println("updating...");
 
   // Declarations
-  BLA::Matrix<4> reference_vector, thrust_vector;
+  BLA::Matrix<4> thrust_vector;
   BLA::Matrix<3> ypr_delta;
   uint8_t roll_deviation;
   uint8_t pitch_deviation, current_flight_thrust;
@@ -61,7 +61,7 @@ void update_thrust_vector()
   change_drone_thrust_vector();
   
 //  Assignments
-  reference_vector = thrust_vector = DRONE_THRUST_VECTOR;
+  thrust_vector = DRONE_THRUST_VECTOR;
   ypr_delta = YPR - DES_YPR; 
   roll_deviation = abs(ypr_delta(ROLL));
   pitch_deviation = abs(ypr_delta(PITCH));
@@ -70,8 +70,8 @@ void update_thrust_vector()
   backward_lean = (ypr_delta(PITCH) < 0);
   
 
-  fix_roll(&reference_vector, abs(ypr_delta(ROLL)), MIN_PULSE, 2 * FLIGHT_THRUST, left_tilt, &thrust_vector);
-  fix_pitch(&reference_vector, abs(ypr_delta(PITCH)), MIN_PULSE, 2 * FLIGHT_THRUST, backward_lean, &thrust_vector);
+  fix_roll(abs(ypr_delta(ROLL)), (uint8_t) (0.6 * current_flight_thrust), 2 * current_flight_thrust, left_tilt, &thrust_vector);
+  fix_pitch(abs(ypr_delta(PITCH)), (uint8_t) (0.6 * current_flight_thrust), 2 * current_flight_thrust, backward_lean, &thrust_vector);
 
 //  Serial << " Got thrust vector: " << thrust_vector;
 //  Serial << "Roll deviation: " << roll_deviation << " pitch dev: " << pitch_deviation << "\n";
@@ -86,39 +86,39 @@ void update_thrust_vector()
 //  Serial.print("Took: "); Serial.println(en-st);
 }
 
-void fix_roll (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector)
+void fix_roll (uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector)
 {
   if (left_tilt)  // left tilt
   {
-//    (*thrust_vector)(FRONTMA) = (*reference_vector)(FRONTMA) = get_mapped_thrust((*reference_vector)(FRONTMA), deviation, min_value, max_value, true);
-//    (*thrust_vector)(REARMA) = (*reference_vector)(REARMA) = get_mapped_thrust((*reference_vector)(REARMA), deviation, min_value, max_value, true);
-    (*thrust_vector)(FRONTMB) = (*reference_vector)(FRONTMB) = get_mapped_thrust((*reference_vector)(FRONTMB), deviation, min_value, max_value, false);
-    (*thrust_vector)(REARMB) = (*reference_vector)(REARMB) = get_mapped_thrust((*reference_vector)(REARMB), deviation, min_value, max_value, false);
+//    (*thrust_vector)(FRONTMA) = get_mapped_thrust((*thrust_vector)(FRONTMA), deviation, min_value, max_value, true);
+//    (*thrust_vector)(REARMA) = get_mapped_thrust((*thrust_vector)(REARMA), deviation, min_value, max_value, true);
+    (*thrust_vector)(FRONTMB) = get_mapped_thrust((*thrust_vector)(FRONTMB), deviation, min_value, max_value, false);
+    (*thrust_vector)(REARMB) = get_mapped_thrust((*thrust_vector)(REARMB), deviation, min_value, max_value, false);
   }
   else    // right tilt
   {
-    (*thrust_vector)(FRONTMA) = (*reference_vector)(FRONTMA) = get_mapped_thrust((*reference_vector)(FRONTMA), deviation, min_value, max_value, false);
-    (*thrust_vector)(REARMA) = (*reference_vector)(REARMA) = get_mapped_thrust((*reference_vector)(REARMA), deviation, min_value, max_value, false);
-//    (*thrust_vector)(FRONTMB) = (*reference_vector)(FRONTMB) = get_mapped_thrust((*reference_vector)(FRONTMB), deviation, min_value, max_value, true);
-//    (*thrust_vector)(REARMB) = (*reference_vector)(REARMB) = get_mapped_thrust((*reference_vector)(REARMB), deviation, min_value, max_value, true);
+    (*thrust_vector)(FRONTMA) = get_mapped_thrust((*thrust_vector)(FRONTMA), deviation, min_value, max_value, false);
+    (*thrust_vector)(REARMA) = get_mapped_thrust((*thrust_vector)(REARMA), deviation, min_value, max_value, false);
+//    (*thrust_vector)(FRONTMB) = get_mapped_thrust((*thrust_vector)(FRONTMB), deviation, min_value, max_value, true);
+//    (*thrust_vector)(REARMB) = get_mapped_thrust((*thrust_vector)(REARMB), deviation, min_value, max_value, true);
   }
 }
 
-void fix_pitch (BLA::Matrix<4> *reference_vector, uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector)
+void fix_pitch (uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector)
 {
   if (backward_lean)  // backward lean
   {
-    (*thrust_vector)(FRONTMA) = (*reference_vector)(FRONTMA) = get_mapped_thrust((*reference_vector)(FRONTMA), deviation, min_value, max_value, false);
-    (*thrust_vector)(FRONTMB) = (*reference_vector)(FRONTMB) = get_mapped_thrust((*reference_vector)(FRONTMB), deviation, min_value, max_value, false);
-//    (*thrust_vector)(REARMA) = (*reference_vector)(REARMA) = get_mapped_thrust((*reference_vector)(REARMA), deviation, min_value, max_value, true);
-//    (*thrust_vector)(REARMB) = (*reference_vector)(REARMB) = get_mapped_thrust((*reference_vector)(REARMB), deviation, min_value, max_value, true);
+    (*thrust_vector)(FRONTMA) = get_mapped_thrust((*thrust_vector)(FRONTMA), deviation, min_value, max_value, false);
+    (*thrust_vector)(FRONTMB) = get_mapped_thrust((*thrust_vector)(FRONTMB), deviation, min_value, max_value, false);
+//    (*thrust_vector)(REARMA) = get_mapped_thrust((*thrust_vector)(REARMA), deviation, min_value, max_value, true);
+//    (*thrust_vector)(REARMB) = get_mapped_thrust((*thrust_vector)(REARMB), deviation, min_value, max_value, true);
   }
   else    // forward lean
   {
-//    (*thrust_vector)(FRONTMA) = (*reference_vector)(FRONTMA) = get_mapped_thrust((*reference_vector)(FRONTMA), deviation, min_value, max_value, true);
-//    (*thrust_vector)(FRONTMB) = (*reference_vector)(FRONTMB) = get_mapped_thrust((*reference_vector)(FRONTMB), deviation, min_value, max_value, true);
-    (*thrust_vector)(REARMA) = (*reference_vector)(REARMA) = get_mapped_thrust((*reference_vector)(REARMA), deviation, min_value, max_value, false);
-    (*thrust_vector)(REARMB) = (*reference_vector)(REARMB) = get_mapped_thrust((*reference_vector)(REARMB), deviation, min_value, max_value, false);
+//    (*thrust_vector)(FRONTMA) = get_mapped_thrust((*thrust_vector)(FRONTMA), deviation, min_value, max_value, true);
+//    (*thrust_vector)(FRONTMB) = get_mapped_thrust((*thrust_vector)(FRONTMB), deviation, min_value, max_value, true);
+    (*thrust_vector)(REARMA) = get_mapped_thrust((*thrust_vector)(REARMA), deviation, min_value, max_value, false);
+    (*thrust_vector)(REARMB) = get_mapped_thrust((*thrust_vector)(REARMB), deviation, min_value, max_value, false);
   }
 }
 
