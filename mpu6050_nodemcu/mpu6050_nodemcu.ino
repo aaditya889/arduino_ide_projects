@@ -61,12 +61,13 @@ void setup()
 void loop()
 {
   BLA::Matrix<3> mpu_values[2];
+  BLA::Matrix<4> thrust_vector = DRONE_THRUST_VECTOR;
    char mpu_data[150];
    check_flight_status();
    if (!IS_FLIGHT_ACHIEVED) calibrate_flight_thrust();
    
-   sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf", YPR(AX), YPR(AY), YPR(AZ));
+   sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf DTFA: %5lf DTFB: %5lf DTRA: %5lf DTRB: %5lf", YPR(AX), YPR(AY), YPR(AZ), thrust_vector(FRONTMA), thrust_vector(FRONTMB), thrust_vector(REARMA), thrust_vector(REARMB));
 
-   Serial << "YPR => " << YPR << "\n";
+//   Serial << "YPR => " << YPR << "\n";
    send_udp(mpu_data);
 }
