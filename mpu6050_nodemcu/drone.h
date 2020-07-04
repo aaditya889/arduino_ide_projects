@@ -242,6 +242,16 @@ void check_flight_status()
 }
 
 
+void export_drone_stats()
+{
+  char mpu_data[150];
+  BLA::Matrix<4> thrust_vector = DRONE_THRUST_VECTOR;
+  BLA::Matrix<3> ypr = YPR;
+  sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf DTFA: %5lf DTFB: %5lf DTRA: %5lf DTRB: %5lf", ypr(AX), ypr(AY), ypr(AZ), thrust_vector(FRONTMA), thrust_vector(FRONTMB), thrust_vector(REARMA), thrust_vector(REARMB));
+  send_udp(mpu_data);
+}
+
+
 void change_flight_thrust(uint8_t flight_thrust)
 {
   FLIGHT_THRUST_DIFF = flight_thrust - FLIGHT_THRUST;
@@ -259,4 +269,11 @@ void change_mpu_filtering_status(boolean is_enabled)
 {
   if (is_enabled) COMBINE_MPU_DATA_TICKER.attach_ms(COMBINE_MPU_DATA_TICKER_INTERVAL_MS, complementary_filter);
   else COMBINE_MPU_DATA_TICKER.detach();
+}
+
+
+void change_export_stats_status(boolean is_enabled)
+{
+  if (is_enabled) UDP_STATS_EXPORTER.attach_ms(UDP_STATS_EXPORTER_INTERVAL_MS, export_drone_stats);
+  else UDP_STATS_EXPORTER.detach(); 
 }
