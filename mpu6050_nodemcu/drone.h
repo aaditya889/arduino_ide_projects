@@ -70,8 +70,8 @@ void update_thrust_vector()
   backward_lean = (ypr_delta(PITCH) < 0);
   
 
-  fix_roll(abs(ypr_delta(ROLL)), (uint8_t) (0.7 * current_flight_thrust), 2 * current_flight_thrust, left_tilt, &thrust_vector);
-  fix_pitch(abs(ypr_delta(PITCH)), (uint8_t) (0.7 * current_flight_thrust), 2 * current_flight_thrust, backward_lean, &thrust_vector);
+  fix_roll(abs(ypr_delta(ROLL)), (uint8_t) (BALANCE_AMPLITUDE * current_flight_thrust), 2 * current_flight_thrust, left_tilt, &thrust_vector);
+  fix_pitch(abs(ypr_delta(PITCH)), (uint8_t) (BALANCE_AMPLITUDE * current_flight_thrust), 2 * current_flight_thrust, backward_lean, &thrust_vector);
 
 //  Serial << " Got thrust vector: " << thrust_vector;
 //  Serial << "Roll deviation: " << roll_deviation << " pitch dev: " << pitch_deviation << "\n";
