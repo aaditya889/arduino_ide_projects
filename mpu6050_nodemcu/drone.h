@@ -165,7 +165,7 @@ void calibrate_flight_thrust()
   
   while (!IS_FLIGHT_ACHIEVED)
   {
-    flight_thrust = (FLIGHT_THRUST + 3) % MAX_PULSE;  
+    flight_thrust = (FLIGHT_THRUST + 6) % MAX_PULSE;  
     check_flight_status();
     change_flight_thrust(flight_thrust);
     
@@ -173,6 +173,8 @@ void calibrate_flight_thrust()
     sprintf(udp_message, "Trying to achieve flight at thrust = %d...\n", flight_thrust);
     send_udp(udp_message);
 
+    if (flight_thrust >= 75) IS_FLIGHT_ACHIEVED = true;
+    
     delta_thrust = flight_thrust / 3;
     // thrust_vector.Fill(flight_thrust);
 //    thrust_vector(FRONTMA) = flight_thrust + delta_thrust;

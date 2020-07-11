@@ -11,6 +11,10 @@ void initiate_flight();
 void api_not_found();
 void abort_flight();
 void simulate_flight();
+void increase_sensitivity();
+void increase_amplitude();
+void decrease_sensitivity();
+void decrease_amplitude();
 
 void send_udp(char *message)
 {
@@ -28,6 +32,10 @@ void initiate_server()
   server.on("/initiate", initiate_flight);
   server.on("/abort", abort_flight);
   server.on("/simulate_flight", simulate_flight);
+  server.on("/inc_sensitivity", increase_sensitivity);
+  server.on("/inc_amplitude", increase_amplitude);
+  server.on("/dec_sensitivity", decrease_sensitivity);
+  server.on("/dec_amplitude", decrease_amplitude);
   server.onNotFound(api_not_found);
 
   server.begin();
@@ -45,7 +53,8 @@ void initiate_flight()
   send_udp(message);
   INITIATE_FLIGHT = true;
   IS_FLIGHT_ACHIEVED = false;
-  
+
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "text/plain", message);
 }
 
@@ -55,7 +64,8 @@ void simulate_flight()
   Serial << message;
   send_udp(message);
   IS_FLIGHT_ACHIEVED = true;
-  
+
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "text/plain", message);
 }
 
@@ -69,11 +79,53 @@ void abort_flight()
   change_flight_thrust(MIN_PULSE);
   INITIATE_FLIGHT = false;
   IS_FLIGHT_ACHIEVED = false;
+
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", message);
+}
+
+void increase_sensitivity()
+{
+  char message[50];
+  BALANCE_SENSITIVITY += 0.1;
+  sprintf(message, "sensitivity = %f", BALANCE_SENSITIVITY);
   
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", message);
+}
+
+void increase_amplitude()
+{
+  char message[50];
+  BALANCE_AMPLITUDE += 0.1;
+  sprintf(message, "amplitude = %f", BALANCE_AMPLITUDE);
+  
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", message);
+}
+
+void decrease_sensitivity()
+{
+  char message[50];
+  BALANCE_SENSITIVITY -= 0.1;
+  sprintf(message, "sensitivity = %f", BALANCE_SENSITIVITY);
+  
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", message);
+}
+
+void decrease_amplitude()
+{
+  char message[50];
+  BALANCE_AMPLITUDE -= 0.1;
+  sprintf(message, "amplitude = %f", BALANCE_AMPLITUDE);
+  
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "text/plain", message);
 }
 
 void api_not_found()
 {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(404, "text/plain", "Not found");
 }
