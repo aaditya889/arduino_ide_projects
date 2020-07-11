@@ -25,6 +25,11 @@ void calibrate_esc()
   min_power.Fill(MIN_PULSE);
   char udp_message[150];
   send_udp("Calibrating esc...\n");
+  sprintf(udp_message, "Sending max pulse (%d) in 5 seconds...", MAX_PULSE);
+  send_udp(udp_message);
+  Serial.println("Sending max pulse in 5 seconds...");
+  delay(5000);
+  
   ESC_FRONT_1.attach(FRONT_PIN_1, 1000, 2000);
   ESC_FRONT_2.attach(FRONT_PIN_2, 1000, 2000);
   ESC_REAR_1.attach(REAR_PIN_1, 1000, 2000);

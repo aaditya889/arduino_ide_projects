@@ -62,7 +62,7 @@ void update_thrust_vector()
   
 //  Assignments
   thrust_vector = DRONE_THRUST_VECTOR;
-  ypr_delta = YPR - DES_YPR; 
+  ypr_delta = (YPR - DES_YPR) * BALANCE_SENSITIVITY; 
   roll_deviation = abs(ypr_delta(ROLL));
   pitch_deviation = abs(ypr_delta(PITCH));
   current_flight_thrust = FLIGHT_THRUST;
@@ -70,8 +70,8 @@ void update_thrust_vector()
   backward_lean = (ypr_delta(PITCH) < 0);
   
 
-  fix_roll(abs(ypr_delta(ROLL)), (uint8_t) (0.5 * current_flight_thrust), 2 * current_flight_thrust, left_tilt, &thrust_vector);
-  fix_pitch(abs(ypr_delta(PITCH)), (uint8_t) (0.5 * current_flight_thrust), 2 * current_flight_thrust, backward_lean, &thrust_vector);
+  fix_roll(abs(ypr_delta(ROLL)), (uint8_t) (0.7 * current_flight_thrust), 2 * current_flight_thrust, left_tilt, &thrust_vector);
+  fix_pitch(abs(ypr_delta(PITCH)), (uint8_t) (0.7 * current_flight_thrust), 2 * current_flight_thrust, backward_lean, &thrust_vector);
 
 //  Serial << " Got thrust vector: " << thrust_vector;
 //  Serial << "Roll deviation: " << roll_deviation << " pitch dev: " << pitch_deviation << "\n";
@@ -180,7 +180,7 @@ void calibrate_flight_thrust()
 //    thrust_vector(REARMA) = flight_thrust - delta_thrust;
 //    thrust_vector(REARMB) = flight_thrust + delta_thrust;
     
-    find_mpu_averages(mpu_values, 200, 10, true);   // This is also the delay for this loop
+    find_mpu_averages(mpu_values, 100, 20, true);   // This is also the delay for this loop
     gyro_z = mpu_values[1](GZ);
     Serial.print("GOT GYRO Z = "); Serial.println(gyro_z);
     gyro_z = (double)abs(gyro_z);
@@ -221,7 +221,7 @@ void check_flight_status()
 {
   int i = 0;
   char udp_message[100];
-  BLA::Matrix<4> thrust_vector;
+//  BLA::Matrix<4> thrust_vector;
   sprintf(udp_message, "Server listening on %s:%d, waiting for response...\n",  WiFi.localIP().toString().c_str(), SERVER_PORT);
   server.handleClient();
   
@@ -244,10 +244,10 @@ void check_flight_status()
 
 void export_drone_stats()
 {
-  char mpu_data[150];
-  BLA::Matrix<4> thrust_vector = DRONE_THRUST_VECTOR;
-  BLA::Matrix<3> ypr = YPR;
-  sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf DTFA: %5lf DTFB: %5lf DTRA: %5lf DTRB: %5lf", ypr(AX), ypr(AY), ypr(AZ), thrust_vector(FRONTMA), thrust_vector(FRONTMB), thrust_vector(REARMA), thrust_vector(REARMB));
+  char mpu_data[200];
+//  BLA::Matrix<4> thrust_vector = DRONE_THRUST_VECTOR;
+//  BLA::Matrix<3> ypr = YPR;
+  sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf DTFA: %5lf DTFB: %5lf DTRA: %5lf DTRB: %5lf", YPR(AX), YPR(AY), YPR(AZ), DRONE_THRUST_VECTOR(FRONTMA), DRONE_THRUST_VECTOR(FRONTMB), DRONE_THRUST_VECTOR(REARMA), DRONE_THRUST_VECTOR(REARMB));
   send_udp(mpu_data);
 }
 
