@@ -61,7 +61,7 @@ void update_thrust_vector()
   change_drone_thrust_vector();
   
 //  Assignments
-  thrust_vector = DRONE_THRUST_VECTOR;
+  thrust_vector = DESIRED_DRONE_THRUST;
   ypr_delta = (YPR - DES_YPR) * BALANCE_SENSITIVITY; 
   roll_deviation = abs(ypr_delta(ROLL));
   pitch_deviation = abs(ypr_delta(PITCH));
@@ -79,7 +79,8 @@ void update_thrust_vector()
   recalibrate_thrust_vector(&thrust_vector, current_flight_thrust);
   
   update_esc_power(thrust_vector);
-  // DRONE_THRUST_VECTOR = thrust_vector;
+  DRONE_THRUST_VECTOR = thrust_vector;
+
 //  Serial.println("ending...");
 //  en=micros();
 
@@ -133,6 +134,7 @@ void change_drone_thrust_vector()
     DRONE_THRUST_VECTOR(i) = (value <= 0) ? 0 : value;
   }
   FLIGHT_THRUST += FLIGHT_THRUST_DIFF;
+  DESIRED_DRONE_THRUST = {FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST};
   FLIGHT_THRUST_DIFF = 0;
 }
 
@@ -182,7 +184,7 @@ void calibrate_flight_thrust()
 //    thrust_vector(REARMA) = flight_thrust - delta_thrust;
 //    thrust_vector(REARMB) = flight_thrust + delta_thrust;
     
-    find_mpu_averages(mpu_values, 100, 20, true);   // This is also the delay for this loop
+    find_mpu_averages(mpu_values, 100, 15, true);   // This is also the delay for this loop
     gyro_z = mpu_values[1](GZ);
     Serial.print("GOT GYRO Z = "); Serial.println(gyro_z);
     gyro_z = (double)abs(gyro_z);

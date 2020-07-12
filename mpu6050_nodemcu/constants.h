@@ -56,7 +56,7 @@ BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,
 
 // Changing global variables
 BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR;
-BLA::Matrix<4> DRONE_THRUST_VECTOR;
+BLA::Matrix<4> DRONE_THRUST_VECTOR, DESIRED_DRONE_THRUST;
 
 uint32_t GYRO_START_TIME = 0, GYRO_END_TIME = 0;
 uint8_t FLIGHT_THRUST = 0;
