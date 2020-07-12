@@ -79,7 +79,7 @@ void update_thrust_vector()
   recalibrate_thrust_vector(&thrust_vector, current_flight_thrust);
   
   update_esc_power(thrust_vector);
-  DRONE_THRUST_VECTOR = thrust_vector;
+  // DRONE_THRUST_VECTOR = thrust_vector;
 //  Serial.println("ending...");
 //  en=micros();
 
