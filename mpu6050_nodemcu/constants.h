@@ -25,6 +25,7 @@
 #define PITCH 1
 #define YAW 2
 
+uint8_t REINIT_CALLED = 0;
 //const char *ssid = "sharma";
 //const char *password = "H0m$#@12345";
 const char *ssid = "aad";
@@ -42,6 +43,7 @@ const uint8_t MAX_PULSE = 180;
 
 boolean INITIATE_FLIGHT = false;
 boolean IS_FLIGHT_ACHIEVED = false;
+boolean IS_AUTO_BALANCED = false;
 const double ACC_WEIGHT = 0.02;
 const uint16_t ACC_SCALE_FACTOR = 16384;
 const uint16_t GYRO_SCALE_FACTOR = 131;
@@ -53,10 +55,10 @@ ESP8266WebServer server(SERVER_PORT);
 
 //  Gyro-accelerometer axis mapping
 BLA::Matrix<3> ADX = {0,1,0}, ADY = {-1,0,0}, ADZ = {0,0,0}, MPU_ACC_OFF = {0,0,1}, DES_YPR = {0,0,0};
-
+BLA::Matrix<3,3> ANGLE_DELTA_TRANSFORM = {0,-1,0, 1,0,0, 0,0,0};
 // Changing global variables
 BLA::Matrix<3> MPU_ACC_AVG, MPU_GYRO_AVG, YPR_GYRO, YPR;
-BLA::Matrix<4> DRONE_THRUST_VECTOR, DESIRED_DRONE_THRUST;
+BLA::Matrix<4> CURRENT_THRUST_VECTOR, DESIRED_THRUST_VECTOR, CURRENT_THRUST_RATIO, STABLE_THRUST_RATIO = {0,0,0,0};
 
 uint32_t GYRO_START_TIME = 0, GYRO_END_TIME = 0;
 uint8_t FLIGHT_THRUST = 0;

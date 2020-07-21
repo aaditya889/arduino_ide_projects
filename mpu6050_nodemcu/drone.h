@@ -12,11 +12,11 @@ void update_thrust_vector();
 void fix_roll (uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean left_tilt, BLA::Matrix<4>* thrust_vector);
 void fix_pitch (uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean backward_lean, BLA::Matrix<4>* thrust_vector);
 void change_drone_thrust_vector();
-void recalibrate_thrust_vector(BLA::Matrix<4> *thrust_vector, uint8_t current_flight_thrust);
+// void recalibrate_thrust_vector(BLA::Matrix<4> *thrust_vector, uint8_t current_flight_thrust);
 void calibrate_flight_thrust();
 void check_flight_status();
 void change_flight_thrust(uint8_t flight_thrust);
-void change_auto_balancing_status(boolean is_enabled);
+void change_update_thrust_status(boolean is_enabled);
 void change_mpu_filtering_status(boolean is_enabled);
 
 
@@ -43,7 +43,7 @@ void complementary_filter()
 }
 
 
-// Changes DRONE_THRUST_VECTOR
+// Changes CURRENT_THRUST_VECTOR
 void update_thrust_vector()
 {
 //  long unsigned int st,en;
@@ -60,26 +60,27 @@ void update_thrust_vector()
 
   change_drone_thrust_vector();
   
-//  Assignments
-  thrust_vector = DESIRED_DRONE_THRUST;
-  ypr_delta = (YPR - DES_YPR) * BALANCE_SENSITIVITY; 
-  roll_deviation = abs(ypr_delta(ROLL));
-  pitch_deviation = abs(ypr_delta(PITCH));
-  current_flight_thrust = FLIGHT_THRUST;
-  left_tilt = (ypr_delta(ROLL) < 0);
-  backward_lean = (ypr_delta(PITCH) < 0);
-  
-
-  fix_roll(abs(ypr_delta(ROLL)), (uint8_t) (BALANCE_AMPLITUDE * current_flight_thrust), 2 * current_flight_thrust, left_tilt, &thrust_vector);
-  fix_pitch(abs(ypr_delta(PITCH)), (uint8_t) (BALANCE_AMPLITUDE * current_flight_thrust), 2 * current_flight_thrust, backward_lean, &thrust_vector);
+  thrust_vector = DESIRED_THRUST_VECTOR;
+  if (IS_AUTO_BALANCED)
+  {
+    //  Assignments
+    ypr_delta = (YPR - DES_YPR) * BALANCE_SENSITIVITY; 
+    roll_deviation = abs(ypr_delta(ROLL));
+    pitch_deviation = abs(ypr_delta(PITCH));
+    current_flight_thrust = FLIGHT_THRUST;
+    left_tilt = (ypr_delta(ROLL) < 0);
+    backward_lean = (ypr_delta(PITCH) < 0);
+    fix_roll(abs(ypr_delta(ROLL)), (uint8_t) (BALANCE_AMPLITUDE * current_flight_thrust), 2 * current_flight_thrust, left_tilt, &thrust_vector);
+    fix_pitch(abs(ypr_delta(PITCH)), (uint8_t) (BALANCE_AMPLITUDE * current_flight_thrust), 2 * current_flight_thrust, backward_lean, &thrust_vector);
+  }
 
 //  Serial << " Got thrust vector: " << thrust_vector;
 //  Serial << "Roll deviation: " << roll_deviation << " pitch dev: " << pitch_deviation << "\n";
   
-  recalibrate_thrust_vector(&thrust_vector, current_flight_thrust);
+  // recalibrate_thrust_vector(&thrust_vector, current_flight_thrust);
   
   update_esc_power(thrust_vector);
-  DRONE_THRUST_VECTOR = thrust_vector;
+  CURRENT_THRUST_VECTOR = thrust_vector;
 
 //  Serial.println("ending...");
 //  en=micros();
@@ -128,24 +129,23 @@ void change_drone_thrust_vector()
 {
   if(FLIGHT_THRUST_DIFF == 0) return;
 
-  for (uint8_t i = 0; i < DRONE_THRUST_VECTOR.GetRowCount(); i++)
+  for (uint8_t i = 0; i < CURRENT_THRUST_VECTOR.GetRowCount(); i++)
   {
-    int value = DRONE_THRUST_VECTOR(i) + FLIGHT_THRUST_DIFF;
-    DRONE_THRUST_VECTOR(i) = (value <= 0) ? 0 : value;
+    int value = CURRENT_THRUST_VECTOR(i) + FLIGHT_THRUST_DIFF * CURRENT_THRUST_RATIO(i);
+    CURRENT_THRUST_VECTOR(i) = (value <= 0) ? 0 : value;
   }
   FLIGHT_THRUST += FLIGHT_THRUST_DIFF;
-  DESIRED_DRONE_THRUST = {FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST, FLIGHT_THRUST};
+  DESIRED_THRUST_VECTOR =  CURRENT_THRUST_RATIO * FLIGHT_THRUST;
   FLIGHT_THRUST_DIFF = 0;
 }
 
-
-void recalibrate_thrust_vector(BLA::Matrix<4> *thrust_vector, uint8_t current_flight_thrust)
-{
-  double diff = MAX_PULSE;
-  for(uint8_t i = 0; i < (*thrust_vector).GetRowCount(); i++) diff = (double)min(diff, ((double)current_flight_thrust - (*thrust_vector)(i)));
-//  Serial.print("GOT DIFF: "); Serial.println(diff);
-  (*thrust_vector) += (BLA::Matrix<4>) {diff, diff, diff, diff};
-}
+// void recalibrate_thrust_vector(BLA::Matrix<4> *thrust_vector, uint8_t current_flight_thrust)
+// {
+//   double diff = MAX_PULSE;
+//   for(uint8_t i = 0; i < (*thrust_vector).GetRowCount(); i++) diff = (double)min(diff, ((double)current_flight_thrust - (*thrust_vector)(i)));
+// //  Serial.print("GOT DIFF: "); Serial.println(diff);
+//   (*thrust_vector) += (BLA::Matrix<4>) {diff, diff, diff, diff};
+// }
 
 
 uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uint8_t max_val, boolean throttle) 
@@ -156,14 +156,14 @@ uint8_t get_mapped_thrust(uint8_t reference, uint8_t value, uint8_t min_val, uin
 
 void calibrate_flight_thrust()
 {
-  Serial << "Calibrating thrust...\n";
   char udp_message[150];
   uint8_t min_gyro_delta = 5, delta_thrust, grace_thrust = 0, flight_thrust;
   double gyro_z;
   BLA::Matrix<4> thrust_vector;
   BLA::Matrix<3> mpu_values[2];
-
-  flight_thrust = 2;
+  
+  Serial << "Calibrating thrust...\n";
+  flight_thrust = 3;
   
   while (!IS_FLIGHT_ACHIEVED)
   {
@@ -249,9 +249,9 @@ void check_flight_status()
 void export_drone_stats()
 {
   char mpu_data[200];
-//  BLA::Matrix<4> thrust_vector = DRONE_THRUST_VECTOR;
+//  BLA::Matrix<4> thrust_vector = CURRENT_THRUST_VECTOR;
 //  BLA::Matrix<3> ypr = YPR;
-  sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf DTFA: %5lf DTFB: %5lf DTRA: %5lf DTRB: %5lf", YPR(AX), YPR(AY), YPR(AZ), DRONE_THRUST_VECTOR(FRONTMA), DRONE_THRUST_VECTOR(FRONTMB), DRONE_THRUST_VECTOR(REARMA), DRONE_THRUST_VECTOR(REARMB));
+  sprintf(mpu_data, "DBG:: YX: %10lf YY: %10lf YZ: %10lf DTFA: %5lf DTFB: %5lf DTRA: %5lf DTRB: %5lf", YPR(AX), YPR(AY), YPR(AZ), CURRENT_THRUST_VECTOR(FRONTMA), CURRENT_THRUST_VECTOR(FRONTMB), CURRENT_THRUST_VECTOR(REARMA), CURRENT_THRUST_VECTOR(REARMB));
   send_udp(mpu_data);
 }
 
@@ -261,11 +261,20 @@ void change_flight_thrust(uint8_t flight_thrust)
   FLIGHT_THRUST_DIFF = flight_thrust - FLIGHT_THRUST;
 }
 
+void change_drone_thrust_ratio(BLA::Matrix<4> thrust_ratio)
+{
+  CURRENT_THRUST_RATIO = thrust_ratio;
+}
 
-void change_auto_balancing_status(boolean is_enabled)
+void change_update_thrust_status(boolean is_enabled)
 {
   if (is_enabled) BALANCE_DRONE_TICKER.attach_ms(BALANCE_DRONE_TICKER_INTERVAL_MS, update_thrust_vector);
   else BALANCE_DRONE_TICKER.detach();
+}
+
+void change_auto_balance_status(bool is_enabled)
+{
+  IS_AUTO_BALANCED = is_enabled;
 }
 
 

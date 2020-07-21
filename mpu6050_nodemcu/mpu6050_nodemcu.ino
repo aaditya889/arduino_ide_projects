@@ -44,25 +44,26 @@ void setup()
   MPU_GYRO_AVG.Fill(0);
   YPR_GYRO.Fill(0);
   YPR.Fill(0);
-  DRONE_THRUST_VECTOR.Fill(0);
+  CURRENT_THRUST_VECTOR.Fill(0);
 
   mpu_init();
   calibrate_esc();
   initiate_server();
   change_flight_thrust(MIN_PULSE);
   change_mpu_filtering_status(true);
-  change_auto_balancing_status(true);
+  change_update_thrust_status(true);
   change_export_stats_status(true);
   check_flight_status();
   calibrate_flight_thrust();
   GYRO_START_TIME = micros();
 }
-
+// TODO:
+// 1. IMP (in complementary_filter()): remove YRP_GYRO and add the angle_delta directly to YPR, since YPR_GYRO = YPR just after updation.
 
 void loop()
 {
   // BLA::Matrix<3> mpu_values[2];
-  // BLA::Matrix<4> thrust_vector = DRONE_THRUST_VECTOR;
+  // BLA::Matrix<4> thrust_vector = CURRENT_THRUST_VECTOR;
   //  char mpu_data[150];
    check_flight_status();
    if (!IS_FLIGHT_ACHIEVED) calibrate_flight_thrust();
