@@ -55,6 +55,7 @@ void setup()
   change_update_thrust_status(true);
   change_export_stats_status(true);
   find_com_thrust_ratio();
+  delay(600000);
   change_auto_balance_status(true);
   check_flight_status();
   calibrate_flight_thrust();
