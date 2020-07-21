@@ -13,6 +13,9 @@
 #define __drone__server_h__
 #endif
 
+//  Function declarations
+uint8_t tilt_throttle_up(BLA::Matrix<4> thrust_ratio, uint8_t tilt_direction);
+uint8_t tilt_throttle_down(BLA::Matrix<4> thrust_ratio, uint8_t flight_thrust);
 
 void find_com_thrust_ratio()
 {

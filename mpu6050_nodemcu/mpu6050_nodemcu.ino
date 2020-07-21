@@ -9,6 +9,7 @@
 #include <_mpu6050.h>
 #include "drone.h"
 #include "drone_server.h"
+#include "trim.h"
 
 
 //  T = (double)Temperature/340+36.53; //temperature formula
@@ -53,6 +54,8 @@ void setup()
   change_mpu_filtering_status(true);
   change_update_thrust_status(true);
   change_export_stats_status(true);
+  find_com_thrust_ratio();
+  change_auto_balance_status(true);
   check_flight_status();
   calibrate_flight_thrust();
   GYRO_START_TIME = micros();
