@@ -19,6 +19,8 @@ void trim_left();
 void trim_right();
 void trim_forward();
 void trim_backward();
+void trim_left_rotation();
+void trim_right_rotation();
 
 
 void send_udp(char *message)
@@ -45,6 +47,8 @@ void initiate_server()
   server.on("/trim_right", trim_right);
   server.on("/trim_forward", trim_forward);
   server.on("/trim_backward", trim_backward);
+  server.on("/trim_left_rotation", trim_left_rotation);
+  server.on("/trim_right_rotation", trim_right_rotation);
   server.onNotFound(api_not_found);
 
   server.begin();
@@ -137,8 +141,8 @@ void trim_left()
 {
   char message[80];
   BLA::Matrix<4> thrust_ratio = CURRENT_THRUST_RATIO;
-  thrust_ratio(FRONTMB) += MAX_RATIO_TRIM;
-  thrust_ratio(REARMB) += MAX_RATIO_TRIM;
+  thrust_ratio(FRONTMB) += MAX_TRIM_RATIO;
+  thrust_ratio(REARMB) += MAX_TRIM_RATIO;
   change_drone_thrust_ratio(thrust_ratio);
   
   sprintf(message, "thrust_ratio = [%f %f %f %f]", CURRENT_THRUST_RATIO(FRONTMA), CURRENT_THRUST_RATIO(FRONTMB), CURRENT_THRUST_RATIO(REARMA), CURRENT_THRUST_RATIO(REARMB));
@@ -151,8 +155,8 @@ void trim_right()
 {
   char message[80];
   BLA::Matrix<4> thrust_ratio = CURRENT_THRUST_RATIO;
-  thrust_ratio(FRONTMA) += MAX_RATIO_TRIM;
-  thrust_ratio(REARMA) += MAX_RATIO_TRIM;
+  thrust_ratio(FRONTMA) += MAX_TRIM_RATIO;
+  thrust_ratio(REARMA) += MAX_TRIM_RATIO;
   change_drone_thrust_ratio(thrust_ratio);
   
   sprintf(message, "thrust_ratio = [%f %f %f %f]", CURRENT_THRUST_RATIO(FRONTMA), CURRENT_THRUST_RATIO(FRONTMB), CURRENT_THRUST_RATIO(REARMA), CURRENT_THRUST_RATIO(REARMB));
@@ -165,8 +169,8 @@ void trim_forward()
 {
   char message[80];
   BLA::Matrix<4> thrust_ratio = CURRENT_THRUST_RATIO;
-  thrust_ratio(REARMB) += MAX_RATIO_TRIM;
-  thrust_ratio(REARMA) += MAX_RATIO_TRIM;
+  thrust_ratio(REARMB) += MAX_TRIM_RATIO;
+  thrust_ratio(REARMA) += MAX_TRIM_RATIO;
   change_drone_thrust_ratio(thrust_ratio);
   
   sprintf(message, "thrust_ratio = [%f %f %f %f]", CURRENT_THRUST_RATIO(FRONTMA), CURRENT_THRUST_RATIO(FRONTMB), CURRENT_THRUST_RATIO(REARMA), CURRENT_THRUST_RATIO(REARMB));
@@ -179,8 +183,36 @@ void trim_backward()
 {
   char message[80];
   BLA::Matrix<4> thrust_ratio = CURRENT_THRUST_RATIO;
-  thrust_ratio(FRONTMA) += MAX_RATIO_TRIM;
-  thrust_ratio(FRONTMB) += MAX_RATIO_TRIM;
+  thrust_ratio(FRONTMA) += MAX_TRIM_RATIO;
+  thrust_ratio(FRONTMB) += MAX_TRIM_RATIO;
+  change_drone_thrust_ratio(thrust_ratio);
+  
+  sprintf(message, "thrust_ratio = [%f %f %f %f]", CURRENT_THRUST_RATIO(FRONTMA), CURRENT_THRUST_RATIO(FRONTMB), CURRENT_THRUST_RATIO(REARMA), CURRENT_THRUST_RATIO(REARMB));
+  
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", message);
+}
+
+void trim_left_rotation()
+{
+  char message[80];
+  BLA::Matrix<4> thrust_ratio = CURRENT_THRUST_RATIO;
+  thrust_ratio(FRONTMB) += MAX_TRIM_RATIO;
+  thrust_ratio(REARMA) += MAX_TRIM_RATIO;
+  change_drone_thrust_ratio(thrust_ratio);
+  
+  sprintf(message, "thrust_ratio = [%f %f %f %f]", CURRENT_THRUST_RATIO(FRONTMA), CURRENT_THRUST_RATIO(FRONTMB), CURRENT_THRUST_RATIO(REARMA), CURRENT_THRUST_RATIO(REARMB));
+  
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", message);
+}
+
+void trim_right_rotation()
+{
+  char message[80];
+  BLA::Matrix<4> thrust_ratio = CURRENT_THRUST_RATIO;
+  thrust_ratio(FRONTMA) += MAX_TRIM_RATIO;
+  thrust_ratio(REARMB) += MAX_TRIM_RATIO;
   change_drone_thrust_ratio(thrust_ratio);
   
   sprintf(message, "thrust_ratio = [%f %f %f %f]", CURRENT_THRUST_RATIO(FRONTMA), CURRENT_THRUST_RATIO(FRONTMB), CURRENT_THRUST_RATIO(REARMA), CURRENT_THRUST_RATIO(REARMB));

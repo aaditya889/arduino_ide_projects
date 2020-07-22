@@ -47,7 +47,7 @@ boolean IS_AUTO_BALANCED = false;
 const double ACC_WEIGHT = 0.02;
 const uint16_t ACC_SCALE_FACTOR = 16384;
 const uint16_t GYRO_SCALE_FACTOR = 131;
-float MAX_RATIO_TRIM = 0.02;
+float MAX_TRIM_RATIO = 0.01;
 WiFiUDP udp_client;
 ESP8266WebServer server(SERVER_PORT);
 
