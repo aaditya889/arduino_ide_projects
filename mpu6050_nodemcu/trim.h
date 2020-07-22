@@ -62,7 +62,8 @@ void find_com_thrust_ratio()
   for (uint8_t i = 0; i < thrust_ratio.GetRowCount(); i++) thrust_ratio(i) /= max_ratio;
   
   STABLE_THRUST_RATIO = thrust_ratio;
-
+  change_drone_thrust_ratio(thrust_ratio);
+  
   Serial << "Found the center of mass with ratios: " << STABLE_THRUST_RATIO << "\n";
   sprintf(udp_message, "Got ratio: [%f %f %f %f]\n", STABLE_THRUST_RATIO(0), STABLE_THRUST_RATIO(1), STABLE_THRUST_RATIO(2), STABLE_THRUST_RATIO(3));
   send_udp(udp_message);
