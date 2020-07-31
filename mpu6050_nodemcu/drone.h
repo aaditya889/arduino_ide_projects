@@ -127,11 +127,15 @@ void fix_pitch (uint8_t deviation, uint8_t min_value, uint8_t max_value, boolean
 
 void change_drone_thrust_vector()
 {
-  if(FLIGHT_THRUST_DIFF == 0) return;
+  if(FLIGHT_THRUST_DIFF == 0) 
+  {
+    DESIRED_THRUST_VECTOR =  CURRENT_THRUST_RATIO * FLIGHT_THRUST;
+    return;
+  }
 
   for (uint8_t i = 0; i < CURRENT_THRUST_VECTOR.GetRowCount(); i++)
   {
-    int value = CURRENT_THRUST_VECTOR(i) + FLIGHT_THRUST_DIFF * CURRENT_THRUST_RATIO(i);
+    int value = CURRENT_THRUST_VECTOR(i) + (FLIGHT_THRUST_DIFF * CURRENT_THRUST_RATIO(i));
     CURRENT_THRUST_VECTOR(i) = (value <= 0) ? 0 : value;
   }
   FLIGHT_THRUST += FLIGHT_THRUST_DIFF;
@@ -163,11 +167,13 @@ void calibrate_flight_thrust()
   BLA::Matrix<3> mpu_values[2];
   
   Serial << "Calibrating thrust...\n";
-  flight_thrust = 3;
+  flight_thrust = 45;
+  change_flight_thrust(flight_thrust);
+  delay(100);
   
   while (!IS_FLIGHT_ACHIEVED)
   {
-    flight_thrust = (FLIGHT_THRUST + 6) % MAX_PULSE;  
+    flight_thrust = (FLIGHT_THRUST + 3) % MAX_PULSE;  
     check_flight_status();
     change_flight_thrust(flight_thrust);
     

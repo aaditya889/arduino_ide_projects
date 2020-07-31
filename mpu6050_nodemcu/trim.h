@@ -20,15 +20,16 @@ uint8_t tilt_throttle_down(BLA::Matrix<4> thrust_ratio, uint8_t flight_thrust);
 void find_com_thrust_ratio()
 {
   char udp_message[150];
-  Serial << "Finding the centre of mass of the frame...\n";
-  sprintf(udp_message, "Finding the centre of mass of the frame...\n");
-  send_udp(udp_message);
   BLA::Matrix<4> thrust_ratio;
   uint8_t flight_thrust;
   float perpendicular_relation, parallel_relation, max_ratio = 0;
 
   check_flight_status();
   change_auto_balance_status(false);
+
+  Serial << "Finding the centre of mass of the frame...\n";
+  sprintf(udp_message, "Finding the centre of mass of the frame...\n");
+  send_udp(udp_message);
 
   // right tilt
   thrust_ratio(FRONTMB) = thrust_ratio(REARMB) = 0;
@@ -61,11 +62,16 @@ void find_com_thrust_ratio()
   for (uint8_t i = 0; i < thrust_ratio.GetRowCount(); i++) thrust_ratio(i) /= max_ratio;
   
   STABLE_THRUST_RATIO = thrust_ratio;
+  change_drone_thrust_ratio(thrust_ratio);
+  
+  Serial << "Found the center of mass with ratios: " << STABLE_THRUST_RATIO << "\n";
+  sprintf(udp_message, "Got ratio: [%f %f %f %f]\n", STABLE_THRUST_RATIO(0), STABLE_THRUST_RATIO(1), STABLE_THRUST_RATIO(2), STABLE_THRUST_RATIO(3));
+  send_udp(udp_message);
 }
 
 uint8_t tilt_throttle_up(BLA::Matrix<4> thrust_ratio, uint8_t tilt_direction) 
 {
-  uint8_t flight_thrust = 3, max_deviation = 2;
+  uint8_t flight_thrust = 50, max_deviation = 2;
   char udp_message[150];
 
   Serial << "Throttling up with ratio: " << thrust_ratio << " ...\n";
@@ -83,10 +89,12 @@ uint8_t tilt_throttle_up(BLA::Matrix<4> thrust_ratio, uint8_t tilt_direction)
     send_udp(udp_message);
 
     change_flight_thrust(flight_thrust);
-    delay(100);
+    delay(500);
     if (abs(YPR(tilt_direction)) >= max_deviation) return flight_thrust;
     flight_thrust += 1;
   }
+  
+  change_flight_thrust(MIN_PULSE);
   Serial << "Unable to find the tilt ratio...\n";
   sprintf(udp_message, "Unable to find the tilt ratio...\n");
   send_udp(udp_message);
@@ -113,7 +121,7 @@ uint8_t tilt_throttle_down(BLA::Matrix<4> thrust_ratio, uint8_t flight_thrust)
     send_udp(udp_message);
 
     change_flight_thrust(flight_thrust);
-    delay(100);
+    delay(10);
     flight_thrust -= 1;
   }
   check_flight_status();

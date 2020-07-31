@@ -1,5 +1,9 @@
 # Details about the drone
 
+## General Info
+
+1. FRONTMA is anticlockwise, FRONTMB is clockwise, REARMA is clockwise, and REARMB is anticlockwise.
+
 ## Write Operations
 
 ### Functions calling update_esc_power()
