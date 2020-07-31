@@ -58,7 +58,7 @@ void setup()
   change_auto_balance_status(true);
   check_flight_status();
   calibrate_flight_thrust();
-  GYRO_START_TIME = micros();
+  MPU_START_TIME = micros();
 }
 // TODO:
 // 1. IMP (in complementary_filter()): remove YRP_GYRO and add the angle_delta directly to YPR, since YPR_GYRO = YPR just after updation.

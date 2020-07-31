@@ -20,7 +20,7 @@ void change_update_thrust_status(boolean is_enabled);
 void change_mpu_filtering_status(boolean is_enabled);
 
 
-// Changes YPR, YPR_GYRO, GYRO_START_TIME, GYRO_END_TIME
+// Changes YPR, YPR_GYRO, MPU_START_TIME, MPU_END_TIME
 void complementary_filter()
 {
   BLA::Matrix<3> mpu_values[2], ypr_acc, angle_delta, ypr_delta;
@@ -32,14 +32,14 @@ void complementary_filter()
     ypr_acc(i) = atan2f((double)(mpu_values[0](i)), (double)mpu_values[0](AZ)) * (180 / PI);
   }
 
-  GYRO_END_TIME = micros();
+  MPU_END_TIME = micros();
 
-  angle_delta = (mpu_values[1] * 1.0 * (double)((GYRO_END_TIME - GYRO_START_TIME) / (double) MEGA));
+  angle_delta = (mpu_values[1] * 1.0 * (double)((MPU_END_TIME - MPU_START_TIME) / (double) MEGA));
   YPR_GYRO += ADX * (double)angle_delta(GX) + ADY * (double)angle_delta(GY) + ADZ * (double)angle_delta(GZ);
   
   YPR = ypr_acc * (double)(ACC_WEIGHT) + YPR_GYRO * (double)(1 - ACC_WEIGHT);
   YPR_GYRO = YPR;
-  GYRO_START_TIME = micros();
+  MPU_START_TIME = micros();
 }
 
 
